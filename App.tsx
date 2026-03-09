@@ -1,20 +1,30 @@
+import './global.css';
+import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import * as Sentry from '@sentry/react-native';
+import AppProviders from '@/providers/AppProviders';
+import useAuthStore from '@/stores/authStore';
+import { initSentry } from '@/lib/sentry';
+import HomeScreen from '@/screens/tasks/HomeScreen';
 
-export default function App() {
+// Initialize Sentry at app entry before anything renders
+initSentry();
+
+function RootApp() {
+  const restoreSession = useAuthStore((state) => state.restoreSession);
+
+  useEffect(() => {
+    restoreSession();
+  }, [restoreSession]);
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <AppProviders>
+      <StatusBar style="light" />
+      {/* Navigation shell wired in Phase 2 */}
+      <HomeScreen />
+    </AppProviders>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+// Wrap with Sentry error boundary at the outermost level
+export default Sentry.wrap(RootApp);
