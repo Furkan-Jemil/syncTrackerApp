@@ -1,48 +1,115 @@
-// Placeholder screen — replaced in Phase 3
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, StyleSheet, FlatList, RefreshControl, Text, TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import Header from '@/components/common/Header';
+import TaskCard from '@/components/tasks/TaskCard';
+import useTaskStore from '@/stores/taskStore';
+import useAuthStore from '@/stores/authStore';
+import { HomeStackParamList } from '@/navigation/HomeNavigator';
+
+type HomeNavProp = NativeStackNavigationProp<HomeStackParamList, 'Home'>;
 
 export default function HomeScreen() {
+  const navigation = useNavigation<HomeNavProp>();
+  const user = useAuthStore(s => s.user);
+  const { tasks, isLoading, fetchTasks } = useTaskStore();
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    fetchTasks();
+  }, [fetchTasks]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchTasks();
+    setRefreshing(false);
+  };
+
+  const getParticipantForUser = (task: any) => {
+    return task.participants.find((p: any) => p.userId === user?.id) || task.participants[0];
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.emoji}>🔗</Text>
-      <Text style={styles.title}>SyncTracker</Text>
-      <Text style={styles.subtitle}>Responsibility & Sync Intelligence</Text>
-      <Text style={styles.phase}>Phase 1 Foundation ✓</Text>
+    <View style={styles.flex}>
+      <Header title="My Tasks" />
+      
+      <FlatList
+        data={tasks}
+        keyExtractor={t => t.id}
+        contentContainerStyle={styles.list}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#5a6ff4"
+            colors={['#5a6ff4']}
+          />
+        }
+        ListEmptyComponent={
+          !isLoading ? (
+            <View style={styles.empty}>
+              <Text style={styles.emptyEmoji}>📋</Text>
+              <Text style={styles.emptyTitle}>No active tasks</Text>
+              <Text style={styles.emptySub}>You are caught up on everything.</Text>
+            </View>
+          ) : null
+        }
+        renderItem={({ item }) => {
+          const participant = getParticipantForUser(item);
+          return (
+            <TaskCard
+              task={item}
+              userRole={participant?.role || 'OBSERVER'}
+              userSyncStatus={participant?.syncStatus || 'IN_SYNC'}
+              onPress={() => navigation.navigate('TaskDetail', { taskId: item.id })}
+            />
+          );
+        }}
+      />
+
+      <TouchableOpacity
+        style={styles.fab}
+        activeOpacity={0.8}
+        onPress={() => navigation.navigate('CreateTask')}
+      >
+        <Text style={styles.fabIcon}>+</Text>
+      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  flex: { flex: 1, backgroundColor: '#0f1117' },
+  list: { padding: 16, paddingBottom: 100, flexGrow: 1 },
+  empty: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#0f1117',
-    gap: 8,
+    marginTop: 100,
   },
-  emoji: {
-    fontSize: 64,
-    marginBottom: 12,
+  emptyEmoji: { fontSize: 48, marginBottom: 16 },
+  emptyTitle: { fontSize: 18, fontWeight: '600', color: '#f0f4ff', marginBottom: 8 },
+  emptySub: { fontSize: 14, color: '#6370a0' },
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#5a6ff4',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 8,
+    shadowColor: '#5a6ff4',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
   },
-  title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#f0f4ff',
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: '#8890b5',
-    marginBottom: 24,
-  },
-  phase: {
-    fontSize: 13,
-    color: '#22c55e',
-    backgroundColor: '#0f2e1c',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 100,
-    overflow: 'hidden',
+  fabIcon: {
+    fontSize: 28,
+    color: '#fff',
+    marginTop: -2,
   },
 });
