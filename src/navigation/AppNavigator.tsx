@@ -3,12 +3,12 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, StyleSheet } from 'react-native';
 import HomeNavigator from '@/navigation/HomeNavigator';
 import SyncGraphScreen from '@/screens/graph/SyncGraphScreen';
-import ProfileScreen from '@/screens/profile/ProfileScreen';
+import ProfileNavigator from '@/navigation/ProfileNavigator';
 
 export type AppTabParamList = {
-  Home: undefined;
+  HomeStack: undefined;
   Graph: undefined;
-  Profile: undefined;
+  ProfileStack: undefined;
 };
 
 const Tab = createBottomTabNavigator<AppTabParamList>();
@@ -16,9 +16,9 @@ const Tab = createBottomTabNavigator<AppTabParamList>();
 // Simple emoji icons — replaced with vector icons in Phase 3+
 function TabIcon({ label, focused }: { label: string; focused: boolean }) {
   const icons: Record<string, string> = {
-    Home: '📋',
+    HomeStack: '📋',
     Graph: '🕸',
-    Profile: '👤',
+    ProfileStack: '👤',
   };
   return (
     <Text style={[styles.icon, focused && styles.iconFocused]}>
@@ -35,16 +35,16 @@ export default function AppNavigator() {
         tabBarIcon: ({ focused }) => (
           <TabIcon label={route.name} focused={focused} />
         ),
-        tabBarLabel: route.name,
+        tabBarLabel: route.name.replace('Stack', ''),
         tabBarActiveTintColor: '#5a6ff4',
         tabBarInactiveTintColor: '#4c5175',
         tabBarStyle: styles.tabBar,
         tabBarLabelStyle: styles.tabLabel,
       })}
     >
-      <Tab.Screen name="Home" component={HomeNavigator} />
+      <Tab.Screen name="HomeStack" component={HomeNavigator} />
       <Tab.Screen name="Graph" component={SyncGraphScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="ProfileStack" component={ProfileNavigator} />
     </Tab.Navigator>
   );
 }

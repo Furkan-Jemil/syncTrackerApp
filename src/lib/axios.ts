@@ -26,6 +26,8 @@ apiClient.interceptors.request.use(
   (error: AxiosError) => Promise.reject(error),
 );
 
+import useAuthStore from '@/stores/authStore';
+
 // ── Response Interceptor — normalize errors ──
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => response,
@@ -33,7 +35,8 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       // Token expired — clear stored token
       await SecureStore.deleteItemAsync(TOKEN_KEY);
-      // Phase 2 will broadcast logout event to auth store
+      // Auto-logout user globally
+      useAuthStore.getState().logout();
     }
     return Promise.reject(error);
   },

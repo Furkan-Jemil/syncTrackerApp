@@ -6,6 +6,7 @@ import PrimaryButton from '@/components/common/PrimaryButton';
 import StyledTextInput from '@/components/common/StyledTextInput';
 import { updateSyncStatus } from '@/api/participants';
 import { SyncStatus, SYNC_STATUS_COLORS, SYNC_STATUS_LABELS } from '@/types';
+import * as Haptics from 'expo-haptics';
 import useAuthStore from '@/stores/authStore';
 import useTaskStore from '@/stores/taskStore';
 import useSyncStore from '@/stores/syncStore';
@@ -33,13 +34,14 @@ export default function SyncStatusSheet() {
       // Optimistic update for graph/tree and task list
       updateLiveStatus(taskId, user.id, status);
       updateSyncStatusOptimistic(taskId, user.id, status);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       
       // API call
       await updateSyncStatus(taskId, user.id, status, note.trim() || undefined);
       
       navigation.goBack();
     } catch (err) {
-      // If it fails, ideally we revert the optimistic update. For Phase 3, we just close.
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       navigation.goBack();
     } finally {
       setIsLoading(false);
@@ -65,7 +67,10 @@ export default function SyncStatusSheet() {
                   styles.statusCard,
                   isActive && { borderColor: color, backgroundColor: `${color}1A` }
                 ]}
-                onPress={() => setStatus(s)}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setStatus(s);
+                }}
               >
                 <View style={[styles.dot, { backgroundColor: color }]} />
                 <Text style={[styles.statusText, isActive && { color }]}>
