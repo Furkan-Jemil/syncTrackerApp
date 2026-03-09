@@ -1,7 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, StyleSheet } from 'react-native';
-import HomeScreen from '@/screens/tasks/HomeScreen';
+import HomeNavigator from '@/navigation/HomeNavigator';
 import SyncGraphScreen from '@/screens/graph/SyncGraphScreen';
 import ProfileScreen from '@/screens/profile/ProfileScreen';
 
@@ -42,7 +42,7 @@ export default function AppNavigator() {
         tabBarLabelStyle: styles.tabLabel,
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Home" component={HomeNavigator} />
       <Tab.Screen name="Graph" component={SyncGraphScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
