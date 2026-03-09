@@ -1,23 +1,74 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import Header from '@/components/common/Header';
 import ActivityLog from '@/components/tasks/ActivityLog';
 import useTaskStore from '@/stores/taskStore';
 import useAuthStore from '@/stores/authStore';
+import useSyncStore from '@/stores/syncStore';
+import { useSocket } from '@/hooks/useSocket';
+import { useNotificationStore } from '@/components/common/NotificationBanner';
 
+import ResponsibilityTree from '@/components/visualization/ResponsibilityTree';
+import SyncGraph from '@/components/visualization/SyncGraph';
+
+// Add state to TaskDetailScreen component:
 export default function TaskDetailScreen() {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const taskId = route.params?.taskId;
   const user = useAuthStore(s => s.user);
   
+  const [activeTab, setActiveTab] = useState<'ACTIVITY' | 'TREE' | 'GRAPH'>('ACTIVITY');
+  
   const { selectedTask, fetchTaskById, isLoading, clearSelectedTask } = useTaskStore();
+  const updateLiveStatus = useSyncStore(s => s.updateStatus);
+  const showNotification = useNotificationStore(s => s.showNotification);
+  
+  // Real-time task room connection
+  const { socket } = useSocket(taskId);
 
   useEffect(() => {
     fetchTaskById(taskId);
     return () => clearSelectedTask();
   }, [taskId]);
+
+  useEffect(() => {
+    if (!socket || !socket.connected) return;
+
+    // Listeners for Phase 5 real-time events
+    const onSyncChanged = (data: any) => {
+      // data: { taskId, userId, oldStatus, newStatus }
+      updateLiveStatus(data.taskId, data.userId, data.newStatus);
+    };
+
+    const onHelpRequested = (data: any) => {
+      // data: { taskId, userId, user: User }
+      if (data.userId !== user?.id) {
+        showNotification(`${data.user.name} requested help!`, 'URGENT');
+        updateLiveStatus(data.taskId, data.userId, 'HELP_REQUESTED');
+      }
+    };
+
+    const onParticipantJoined = (data: any) => {
+      // data: { taskId, participant }
+      if (data.participant.userId !== user?.id) {
+        showNotification(`${data.participant.user.name} joined as ${data.participant.role}`, 'INFO');
+      }
+      // Re-fetch to pull new participant array into taskStore
+      fetchTaskById(data.taskId);
+    };
+
+    socket.on('sync_status_changed', onSyncChanged);
+    socket.on('help_requested', onHelpRequested);
+    socket.on('participant_joined', onParticipantJoined);
+
+    return () => {
+      socket.off('sync_status_changed', onSyncChanged);
+      socket.off('help_requested', onHelpRequested);
+      socket.off('participant_joined', onParticipantJoined);
+    };
+  }, [socket, taskId, user?.id]);
 
   if (isLoading || !selectedTask) {
     return (
@@ -41,14 +92,32 @@ export default function TaskDetailScreen() {
         </View>
       </View>
 
-      {/* Tabs placeholder for Phase 4 - currently just showing Activity Log */}
       <View style={styles.tabHeader}>
-        <View style={[styles.tab, styles.tabActive]}><Text style={styles.tabTextActive}>Activity</Text></View>
-        <View style={styles.tab}><Text style={styles.tabText}>Tree (Ph 4)</Text></View>
-        <View style={styles.tab}><Text style={styles.tabText}>Graph (Ph 4)</Text></View>
+        <TouchableOpacity 
+          style={[styles.tab, activeTab === 'ACTIVITY' && styles.tabActive]}
+          onPress={() => setActiveTab('ACTIVITY')}
+        >
+          <Text style={activeTab === 'ACTIVITY' ? styles.tabTextActive : styles.tabText}>Activity</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.tab, activeTab === 'TREE' && styles.tabActive]}
+          onPress={() => setActiveTab('TREE')}
+        >
+          <Text style={activeTab === 'TREE' ? styles.tabTextActive : styles.tabText}>Tree</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.tab, activeTab === 'GRAPH' && styles.tabActive]}
+          onPress={() => setActiveTab('GRAPH')}
+        >
+          <Text style={activeTab === 'GRAPH' ? styles.tabTextActive : styles.tabText}>Graph</Text>
+        </TouchableOpacity>
       </View>
 
-      <ActivityLog logs={selectedTask.syncLogs || []} />
+      <View style={{ flex: 1 }}>
+        {activeTab === 'ACTIVITY' && <ActivityLog logs={selectedTask.syncLogs || []} />}
+        {activeTab === 'TREE' && <ResponsibilityTree task={selectedTask} />}
+        {activeTab === 'GRAPH' && <SyncGraph task={selectedTask} />}
+      </View>
 
       {/* Quick Action Bar for current user */}
       <View style={styles.actionBar}>

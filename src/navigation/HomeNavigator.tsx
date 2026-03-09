@@ -10,6 +10,9 @@ import AddParticipantSheet from '@/screens/tasks/AddParticipantSheet';
 import SyncStatusSheet from '@/screens/tasks/SyncStatusSheet';
 import TimeLogSheet from '@/screens/tasks/TimeLogSheet';
 
+import UserSidePanelSheet from '@/screens/tasks/UserSidePanelSheet';
+import { ParticipantRole, SyncStatus } from '@/types';
+
 export type HomeStackParamList = {
   Home: undefined;
   TaskDetail: { taskId: string };
@@ -17,6 +20,16 @@ export type HomeStackParamList = {
   AddParticipant: { taskId: string };
   SyncStatus: { taskId: string };
   TimeLog: { taskId: string };
+  UserSidePanel: { 
+    userId: string;
+    name: string;
+    role: ParticipantRole;
+    syncStatus: SyncStatus;
+    lastUpdated: string;
+    timeLogged: number;
+    milestonesCompleted: number;
+    notes?: string;
+  };
 };
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
@@ -47,6 +60,7 @@ export default function HomeNavigator() {
         <Stack.Screen name="AddParticipant" component={AddParticipantSheet} />
         <Stack.Screen name="SyncStatus" component={SyncStatusSheet} />
         <Stack.Screen name="TimeLog" component={TimeLogSheet} />
+        <Stack.Screen name="UserSidePanel" component={UserSidePanelSheet} />
       </Stack.Group>
     </Stack.Navigator>
   );
