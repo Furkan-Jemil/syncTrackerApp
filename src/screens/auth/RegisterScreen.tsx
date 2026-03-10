@@ -8,6 +8,7 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -47,10 +48,9 @@ export default function RegisterScreen() {
         email: values.email,
         password: values.password,
       });
-    } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? 'Registration failed. Please try again.';
+    } catch (err: any) {
+      const data = err?.response?.data;
+      const msg = data?.msg || data?.message || data?.error_description || err.message || JSON.stringify(data || err);
       setError('email', { message: msg });
     }
   };
@@ -65,9 +65,15 @@ export default function RegisterScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        {/* Glowing background effect */}
+        <View style={styles.glowOrb} />
         {/* Header */}
         <Animated.View entering={FadeInUp.duration(600)} style={styles.header}>
-          <Text style={styles.emoji}>✨</Text>
+          <Image 
+            source={require('@/assets/app-logo.png')} 
+            style={styles.logo} 
+            resizeMode="contain"
+          />
           <Text style={styles.title}>Create account</Text>
           <Text style={styles.subtitle}>Join SyncTracker and own your work</Text>
         </Animated.View>
@@ -190,7 +196,18 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: '#0f1117' },
+  flex: { flex: 1, backgroundColor: '#09090B' },
+  glowOrb: {
+    position: 'absolute',
+    top: -150,
+    left: '20%',
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: '#A3E635',
+    opacity: 0.15,
+    transform: [{ scale: 1.5 }],
+  },
   container: {
     flexGrow: 1,
     justifyContent: 'center',
@@ -201,20 +218,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 40,
   },
-  emoji: {
-    fontSize: 56,
+  logo: {
+    width: 100,
+    height: 100,
     marginBottom: 16,
   },
   title: {
+    fontFamily: 'SpaceGrotesk_700Bold',
     fontSize: 28,
-    fontWeight: '800',
-    color: '#f0f4ff',
-    letterSpacing: -0.5,
+    color: '#F7FEE7',
+    letterSpacing: -1,
+    lineHeight: 34,
   },
   subtitle: {
+    fontFamily: 'Inter_400Regular',
     fontSize: 14,
-    color: '#6370a0',
+    color: '#94A3B8',
     marginTop: 6,
+    lineHeight: 20,
   },
   form: { width: '100%' },
   spacer: { height: 16 },
@@ -228,13 +249,14 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#2e3148',
+    backgroundColor: '#27272A',
   },
   dividerText: {
+    fontFamily: 'Inter_500Medium',
     fontSize: 13,
-    color: '#4c5175',
+    color: '#A1A1AA',
   },
   linkRow: { alignItems: 'center' },
-  linkText: { fontSize: 14, color: '#6370a0' },
-  linkHighlight: { color: '#5a6ff4', fontWeight: '600' },
+  linkText: { fontFamily: 'Inter_400Regular', fontSize: 14, color: '#A1A1AA' },
+  linkHighlight: { fontFamily: 'Inter_600SemiBold', color: '#A3E635' },
 });

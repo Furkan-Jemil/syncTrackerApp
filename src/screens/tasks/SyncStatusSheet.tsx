@@ -39,6 +39,9 @@ export default function SyncStatusSheet() {
       // API call
       await updateSyncStatus(taskId, user.id, status, note.trim() || undefined);
       
+      // Re-fetch to ensure all task relations display correctly
+      await useTaskStore.getState().fetchTaskById(taskId);
+      
       navigation.goBack();
     } catch (err) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

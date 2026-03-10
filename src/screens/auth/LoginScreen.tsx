@@ -7,6 +7,7 @@ import {
   Platform,
   ScrollView,
   TouchableOpacity,
+  Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -25,7 +26,11 @@ type LoginNavProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 export default function LoginScreen() {
   const navigation = useNavigation<LoginNavProp>();
   const login = useAuthStore((s) => s.login);
+  const resendConfirmation = useAuthStore((s) => s.resendConfirmation);
   const passwordRef = useRef<TextInput>(null);
+  const [isResending, setIsResending] = React.useState(false);
+  const [resendSuccess, setResendSuccess] = React.useState(false);
+  const [unconfirmedEmail, setUnconfirmedEmail] = React.useState<string | null>(null);
 
   const {
     control,
@@ -39,12 +44,34 @@ export default function LoginScreen() {
 
   const onSubmit = async (values: LoginFormValues) => {
     try {
+      setUnconfirmedEmail(null);
+      setResendSuccess(false);
       await login(values);
-    } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? 'Invalid email or password';
-      setError('password', { message: msg });
+    } catch (err: any) {
+      const data = err?.response?.data;
+      const msg = data?.msg || data?.message || data?.error_description || 'Invalid email or password';
+      
+      if (msg.toLowerCase().includes('confirm')) {
+        setUnconfirmedEmail(values.email);
+        setError('email', { message: 'Please confirm your email before signing in.' });
+      } else if (msg.toLowerCase().includes('email')) {
+        setError('email', { message: msg });
+      } else {
+        setError('password', { message: msg });
+      }
+    }
+  };
+
+  const handleResend = async () => {
+    if (!unconfirmedEmail) return;
+    setIsResending(true);
+    try {
+      await resendConfirmation(unconfirmedEmail);
+      setResendSuccess(true);
+    } catch (err) {
+      console.error('Failed to resend confirmation:', err);
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -58,9 +85,15 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        {/* Glowing background effect */}
+        <View style={styles.glowOrb} />
         {/* Header */}
         <Animated.View entering={FadeInUp.duration(600)} style={styles.header}>
-          <Text style={styles.emoji}>🔗</Text>
+          <Image 
+            source={require('@/assets/app-logo.png')} 
+            style={styles.logo} 
+            resizeMode="contain"
+          />
           <Text style={styles.title}>Welcome back</Text>
           <Text style={styles.subtitle}>Sign in to your SyncTracker account</Text>
         </Animated.View>
@@ -112,6 +145,24 @@ export default function LoginScreen() {
 
           <View style={styles.spacerLg} />
 
+          {unconfirmedEmail && (
+            <Animated.View entering={FadeInDown} style={styles.resendContainer}>
+              {resendSuccess ? (
+                <Text style={styles.resendSuccessText}>Verification link sent! Check your inbox.</Text>
+              ) : (
+                <TouchableOpacity 
+                  onPress={handleResend} 
+                  disabled={isResending}
+                  style={styles.resendBtn}
+                >
+                  <Text style={styles.resendText}>
+                    {isResending ? 'Sending...' : 'Resend confirmation link'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </Animated.View>
+          )}
+
           <PrimaryButton
             title="Sign In"
             isLoading={isSubmitting}
@@ -140,7 +191,18 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: '#0f1117' },
+  flex: { flex: 1, backgroundColor: '#09090B' },
+  glowOrb: {
+    position: 'absolute',
+    top: -150,
+    left: '20%',
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: '#A3E635',
+    opacity: 0.15,
+    transform: [{ scale: 1.5 }],
+  },
   container: {
     flexGrow: 1,
     justifyContent: 'center',
@@ -151,20 +213,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 40,
   },
-  emoji: {
-    fontSize: 56,
+  logo: {
+    width: 100,
+    height: 100,
     marginBottom: 16,
   },
   title: {
+    fontFamily: 'SpaceGrotesk_700Bold',
     fontSize: 28,
-    fontWeight: '800',
-    color: '#f0f4ff',
-    letterSpacing: -0.5,
+    color: '#F7FEE7',
+    letterSpacing: -1,
+    lineHeight: 34,
   },
   subtitle: {
+    fontFamily: 'Inter_400Regular',
     fontSize: 14,
-    color: '#6370a0',
+    color: '#94A3B8',
     marginTop: 6,
+    lineHeight: 20,
   },
   form: {
     width: '100%',
@@ -180,21 +246,42 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#2e3148',
+    backgroundColor: '#27272A',
   },
   dividerText: {
+    fontFamily: 'Inter_500Medium',
     fontSize: 13,
-    color: '#4c5175',
+    color: '#A1A1AA',
   },
   linkRow: {
     alignItems: 'center',
   },
   linkText: {
+    fontFamily: 'Inter_400Regular',
     fontSize: 14,
-    color: '#6370a0',
+    color: '#A1A1AA',
   },
   linkHighlight: {
-    color: '#5a6ff4',
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
+    color: '#A3E635',
+  },
+  resendContainer: {
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  resendBtn: {
+    padding: 8,
+  },
+  resendText: {
+    fontFamily: 'Inter_600SemiBold',
+    color: '#A3E635',
+    fontSize: 14,
+    textDecorationLine: 'underline',
+  },
+  resendSuccessText: {
+    fontFamily: 'Inter_500Medium',
+    color: '#22C55E',
+    fontSize: 14,
+    textAlign: 'center',
   },
 });
