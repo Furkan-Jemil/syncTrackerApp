@@ -1,128 +1,124 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Task, ParticipantRole, SyncStatus } from '@/types';
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import { SYNC_STATUS_COLORS, SYNC_STATUS_LABELS, ROLE_LABELS } from '@/types';
-
-dayjs.extend(relativeTime);
+import { Pressable, View, Text, StyleSheet } from 'react-native';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withSpring, 
+  withRepeat, 
+  withSequence, 
+  withTiming, 
+  Easing 
+} from 'react-native-reanimated';
+import { useEffect } from 'react';
+import { SyncStatus } from '@/types';
+import StatusBadge from '../common/StatusBadge';
 
 interface TaskCardProps {
-  task: Task;
-  userRole: ParticipantRole;
-  userSyncStatus: SyncStatus;
-  onPress: () => void;
+  title: string;
+  responsibleName: string;
+  participantCount?: number;
+  status: SyncStatus;
+  onPress?: () => void;
 }
 
-export default function TaskCard({ task, userRole, userSyncStatus, onPress }: TaskCardProps) {
-  const syncColor = SYNC_STATUS_COLORS[userSyncStatus];
+export default function TaskCard({ title, responsibleName, participantCount, status, onPress }: TaskCardProps) {
+  const scale = useSharedValue(1);
+  const translateY = useSharedValue(0);
+  const rotate = useSharedValue(0);
+
+  useEffect(() => {
+    // Subtle floating motion
+    translateY.value = withRepeat(
+      withSequence(
+        withTiming(-4, { duration: 2000, easing: Easing.inOut(Easing.sin) }),
+        withTiming(4, { duration: 2000, easing: Easing.inOut(Easing.sin) })
+      ),
+      -1,
+      true
+    );
+    // Subtle tilt
+    rotate.value = withRepeat(
+      withSequence(
+        withTiming(-1, { duration: 3000 }),
+        withTiming(1, { duration: 3000 })
+      ),
+      -1,
+      true
+    );
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: scale.value },
+      { translateY: translateY.value },
+      { rotateZ: `${rotate.value}deg` }
+    ],
+  }));
+
+  const handlePressIn = () => { scale.value = withSpring(0.95); };
+  const handlePressOut = () => { scale.value = withSpring(1); };
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.7}
-      style={styles.card}
-      onPress={onPress}
-    >
-      <View style={styles.header}>
-        <Text style={styles.title} numberOfLines={1}>{task.title}</Text>
-        <View style={[styles.statusBadge, { borderColor: syncColor, backgroundColor: `${syncColor}15` }]}>
-          <View style={[styles.statusDot, { backgroundColor: syncColor }]} />
-          <Text style={[styles.statusText, { color: syncColor }]}>
-            {SYNC_STATUS_LABELS[userSyncStatus]}
+    <Animated.View style={[animatedStyle, { marginBottom: 12 }]}>
+      <Pressable 
+        style={styles.card} 
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+      >
+        <View style={styles.header}>
+        <Text style={styles.title} numberOfLines={1}>{title}</Text>
+        <StatusBadge status={status} size="sm" />
+      </View>
+      
+      <View style={styles.detailsRow}>
+        <Text style={styles.detailText}>
+          <Text style={styles.label}>Responsible: </Text>
+          {responsibleName}
+        </Text>
+        {participantCount !== undefined && (
+          <Text style={styles.detailText}>
+            <Text style={styles.label}>Participants: </Text>
+            {participantCount}
           </Text>
-        </View>
+        )}
       </View>
-
-      <Text style={styles.description} numberOfLines={2}>
-        {task.description || 'No description provided.'}
-      </Text>
-
-      <View style={styles.footer}>
-        <View style={styles.roleContainer}>
-          <Text style={styles.roleLabel}>My Role: </Text>
-          <Text style={styles.roleValue}>{ROLE_LABELS[userRole]}</Text>
-        </View>
-        <Text style={styles.timeLabel}>Updated {dayjs(task.updatedAt).fromNow()}</Text>
-      </View>
-    </TouchableOpacity>
+    </Pressable>
+  </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#1a1d27',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
+    backgroundColor: '#18181B', // Darker gray
+    borderRadius: 24, // High rounding
+    padding: 20,
     borderWidth: 1,
-    borderColor: '#2e3148',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
+    borderColor: '#27272A',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
+    alignItems: 'flex-start',
+    marginBottom: 12,
   },
   title: {
     flex: 1,
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#f0f4ff',
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#F8FAFC',
     marginRight: 12,
   },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 100,
-    borderWidth: 1,
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginRight: 6,
-  },
-  statusText: {
-    fontSize: 10,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-  },
-  description: {
-    fontSize: 13,
-    color: '#8890b5',
-    lineHeight: 18,
-    marginBottom: 16,
-  },
-  footer: {
+  detailsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#2e3148',
-    paddingTop: 12,
   },
-  roleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  detailText: {
+    fontSize: 14,
+    color: '#A1A1AA',
   },
-  roleLabel: {
-    fontSize: 12,
-    color: '#6370a0',
-  },
-  roleValue: {
-    fontSize: 12,
+  label: {
     fontWeight: '600',
-    color: '#a4bcfd',
-  },
-  timeLabel: {
-    fontSize: 11,
-    color: '#6370a0',
+    color: '#52525B', // Darker label color
   },
 });
