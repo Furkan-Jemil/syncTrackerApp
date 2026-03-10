@@ -1,8 +1,8 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000/api';
-const TOKEN_KEY = 'synctracker_token';
+const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://localhost:3000/api';
+const TOKEN_KEY = process.env.EXPO_PUBLIC_AUTH_TOKEN_STORAGE_KEY ?? 'sync_tracker_token';
 
 // ── Axios Instance ───────────────────────────
 const apiClient: AxiosInstance = axios.create({
@@ -11,6 +11,7 @@ const apiClient: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
+    apikey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '',
   },
 });
 
@@ -32,10 +33,15 @@ import useAuthStore from '@/stores/authStore';
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => response,
   async (error: AxiosError) => {
+    // ── Diagnostic Logging ───────────────────────
+    if (error.code === 'ERR_NETWORK') {
+      console.error(`[Axios Network Error] Check your connectivity or IP. Target: ${error.config?.url}`);
+    } else {
+      console.error(`[Axios API Error] ${error.config?.method?.toUpperCase()} ${error.config?.url} -> Status: ${error.response?.status}`);
+    }
+
     if (error.response?.status === 401) {
-      // Token expired — clear stored token
       await SecureStore.deleteItemAsync(TOKEN_KEY);
-      // Auto-logout user globally
       useAuthStore.getState().logout();
     }
     return Promise.reject(error);

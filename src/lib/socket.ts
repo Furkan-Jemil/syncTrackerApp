@@ -12,6 +12,12 @@ export async function connectSocket(): Promise<Socket> {
 
   const token = await SecureStore.getItemAsync(TOKEN_KEY);
 
+  // Supabase URLs don't support Socket.IO (they use Supabase Realtime/Websockets)
+  if (SOCKET_URL.includes('supabase.co')) {
+    console.warn('[Socket] Disabling Socket.IO connection as Supabase does not support it natively.');
+    return {} as any; 
+  }
+
   socket = io(SOCKET_URL, {
     transports: ['websocket'],
     auth: { token },
