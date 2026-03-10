@@ -43,9 +43,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingBottom: 16,
-    backgroundColor: '#0f1117',
+    backgroundColor: '#09090B',
     borderBottomWidth: 1,
-    borderBottomColor: '#1e2240',
+    borderBottomColor: '#27272A',
     zIndex: 10,
   },
   left: {
@@ -59,16 +59,16 @@ const styles = StyleSheet.create({
   title: {
     flex: 3,
     textAlign: 'center',
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#f0f4ff',
+    fontFamily: 'SpaceGrotesk_700Bold',
+    fontSize: 18,
+    color: '#F8FAFC',
     letterSpacing: -0.3,
   },
   backButton: {
     padding: 4,
   },
   backIcon: {
-    color: '#a0aabe',
+    color: '#A1A1AA',
     fontSize: 24,
     lineHeight: 24,
   },

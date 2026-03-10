@@ -32,7 +32,7 @@ const StyledTextInput = forwardRef<TextInput, StyledTextInputProps>(
           <TextInput
             ref={ref}
             style={[styles.input, style]}
-            placeholderTextColor="#4c5175"
+            placeholderTextColor="#64748B"
             secureTextEntry={secure}
             autoCapitalize="none"
             onFocus={() => setFocused(true)}
@@ -64,33 +64,34 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   label: {
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 13,
-    fontWeight: '600',
-    color: '#a0aabe',
+    color: '#94A3B8',
     marginBottom: 6,
     letterSpacing: 0.2,
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1d27',
-    borderRadius: 12,
+    backgroundColor: '#18181B', // Darker card background
+    borderRadius: 9999, // Pill shape
     borderWidth: 1.5,
-    borderColor: '#2e3148',
-    paddingHorizontal: 16,
+    borderColor: '#27272A',
+    paddingHorizontal: 20,
   },
   inputRowFocused: {
-    borderColor: '#5a6ff4',
-    backgroundColor: '#1d2035',
+    borderColor: '#A3E635', // Lime glow
+    backgroundColor: '#18181B',
   },
   inputRowError: {
-    borderColor: '#ef4444',
+    borderColor: '#EF4444',
   },
   input: {
     flex: 1,
-    height: 52,
-    fontSize: 15,
-    color: '#f0f4ff',
+    height: 56,
+    fontFamily: 'Inter_400Regular',
+    fontSize: 16,
+    color: '#F8FAFC',
   },
   eyeButton: {
     paddingLeft: 8,
@@ -99,8 +100,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   errorText: {
+    fontFamily: 'Inter_400Regular',
     fontSize: 12,
-    color: '#ef4444',
+    color: '#EF4444',
     marginTop: 5,
     marginLeft: 4,
   },
