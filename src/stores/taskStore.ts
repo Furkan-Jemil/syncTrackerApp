@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { Task, SyncStatus, SyncStatusChangedEvent } from '@/types';
-import { getTasks, getTaskById } from '@/api/tasks';
+import useAuthStore from './authStore';
+import { getTasks, getTaskById, submitWork, reviewTask } from '@/api/tasks';
+import { updateParticipantStatus as apiUpdateParticipantStatus } from '@/api/participants';
 
 interface TaskState {
   tasks: Task[];
@@ -10,12 +12,18 @@ interface TaskState {
 
   // Actions
   fetchTasks: () => Promise<void>;
-  fetchTaskById: (id: string) => Promise<void>;
+  fetchTaskById: (id: string) => Promise<Task | null>;
   clearSelectedTask: () => void;
+  
+  // Participant & Workflow Actions
+  updateParticipantStatus: (taskId: string, userId: string, status: 'ACCEPTED' | 'REJECTED') => Promise<void>;
+  submitWork: (taskId: string, userId: string, notes: string, attachments?: { name: string, url: string, fileType: string, sizeBytes?: number }[]) => Promise<void>;
+  reviewTask: (taskId: string, status: 'COMPLETED' | 'ACTIVE', feedback?: string) => Promise<void>;
   
   // Optimistic updates
   updateTaskInList: (task: Task) => void;
   updateSyncStatusOptimistic: (taskId: string, userId: string, status: SyncStatus) => void;
+  updateParticipantStatusOptimistic: (taskId: string, userId: string, status: any) => void;
 }
 
 const useTaskStore = create<TaskState>((set, get) => ({
@@ -39,8 +47,10 @@ const useTaskStore = create<TaskState>((set, get) => ({
     try {
       const task = await getTaskById(id);
       set({ selectedTask: task, isLoading: false });
+      return task;
     } catch (err: any) {
       set({ error: err.message || 'Failed to fetch task', isLoading: false });
+      return null;
     }
   },
 
@@ -55,10 +65,9 @@ const useTaskStore = create<TaskState>((set, get) => ({
 
   updateSyncStatusOptimistic: (taskId: string, userId: string, status: SyncStatus) => {
     set((state) => {
-      // Helper to update participant inside a task
       const updateParticipants = (task: Task) => ({
         ...task,
-        participants: task.participants.map(p => 
+        participants: (task.participants || []).map(p => 
           p.userId === userId ? { ...p, syncStatus: status } : p
         )
       });
@@ -68,6 +77,53 @@ const useTaskStore = create<TaskState>((set, get) => ({
         selectedTask: state.selectedTask?.id === taskId ? updateParticipants(state.selectedTask) : state.selectedTask
       };
     });
+  },
+
+  updateParticipantStatusOptimistic: (taskId: string, userId: string, status: any) => {
+    set((state) => {
+      const updateParticipants = (task: Task) => ({
+        ...task,
+        participants: (task.participants || []).map(p => 
+          p.userId === userId ? { ...p, status } : p
+        )
+      });
+
+      return {
+        tasks: state.tasks.map(t => t.id === taskId ? updateParticipants(t) : t),
+        selectedTask: state.selectedTask?.id === taskId ? updateParticipants(state.selectedTask) : state.selectedTask
+      };
+    });
+  },
+
+  updateParticipantStatus: async (taskId, userId, status) => {
+    await apiUpdateParticipantStatus(taskId, userId, status);
+    get().updateParticipantStatusOptimistic(taskId, userId, status);
+  },
+
+  submitWork: async (taskId, userId, notes, attachments = []) => {
+    set({ isLoading: true });
+    try {
+      await submitWork(taskId, userId, notes, attachments);
+      await get().fetchTaskById(taskId);
+    } catch (err: any) {
+      set({ error: err.message });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  reviewTask: async (taskId, status, feedback = '') => {
+    set({ isLoading: true });
+    try {
+      const reviewerId = useAuthStore.getState().user?.id;
+      if (!reviewerId) throw new Error("No reviewer ID");
+      await reviewTask(taskId, reviewerId, status, feedback);
+      await get().fetchTaskById(taskId);
+    } catch (err: any) {
+      set({ error: err.message });
+    } finally {
+      set({ isLoading: false });
+    }
   }
 }));
 

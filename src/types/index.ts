@@ -9,6 +9,9 @@ export type SyncStatus =
   | 'BLOCKED'
   | 'HELP_REQUESTED';
 
+// ── Participant Status ────────────────────────
+export type ParticipantStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
+
 // ── Participant Roles ────────────────────────
 export type ParticipantRole =
   | 'ASSIGNER'
@@ -23,7 +26,8 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  avatarUrl?: string;
+  avatar_url?: string;
+  bio?: string;
   createdAt: string;
 }
 
@@ -39,6 +43,7 @@ export interface Participant {
   taskId: string;
   role: ParticipantRole;
   syncStatus: SyncStatus;
+  status: ParticipantStatus;
   acceptedAt?: string | null;
   lastSyncAt?: string | null;
   totalTimeLogged: number; // minutes
@@ -92,6 +97,43 @@ export interface SyncLog {
   createdAt: string;
 }
 
+// ── Notification ──────────────────────────────
+export type NotificationType =
+  | 'TASK_ASSIGNED'
+  | 'TASK_ACCEPTED'
+  | 'TASK_REJECTED'
+  | 'HELPER_REQUESTED'
+  | 'HELPER_ACCEPTED'
+  | 'TASK_COMPLETED'
+  | 'REVIEW_REQUESTED'
+  | 'CHANGES_REQUESTED';
+
+export interface Notification {
+  id: string;
+  userId: string;
+  taskId: string;
+  senderId: string;
+  sender?: User;
+  type: NotificationType;
+  message: string;
+  isRead: boolean;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+}
+
+// ── Attachment ────────────────────────────────
+export interface Attachment {
+  id: string;
+  taskId: string;
+  userId: string;
+  user?: User;
+  name: string;
+  url: string;
+  fileType?: string;
+  sizeBytes?: number;
+  createdAt: string;
+}
+
 // ── Task ──────────────────────────────────────
 export interface Task {
   id: string;
@@ -105,7 +147,8 @@ export interface Task {
   milestones: Milestone[];
   syncLogs: SyncLog[];
   timeEntries: TimeEntry[];
-  status: 'ACTIVE' | 'COMPLETED' | 'ARCHIVED';
+  attachments: Attachment[];
+  status: 'ACTIVE' | 'IN_REVIEW' | 'COMPLETED' | 'ARCHIVED';
   createdAt: string;
   updatedAt: string;
 }
@@ -188,4 +231,13 @@ export const ROLE_LABELS: Record<ParticipantRole, string> = {
   HELPER: 'Helper',
   REVIEWER: 'Reviewer',
   OBSERVER: 'Observer',
+};
+
+export const ROLE_COLORS: Record<ParticipantRole, string> = {
+  ASSIGNER: '#A3E635',
+  RESPONSIBLE: '#A3E635',
+  CONTRIBUTOR: '#3b82f6',
+  HELPER: '#f97316',
+  REVIEWER: '#a855f7',
+  OBSERVER: '#71717a',
 };

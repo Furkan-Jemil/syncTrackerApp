@@ -3,7 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 import { AuthUser, LoginPayload, RegisterPayload } from '@/types';
 import { TOKEN_KEY } from '@/lib/axios';
 import { setSentryUser } from '@/lib/sentry';
-import { login as apiLogin, register as apiRegister, logout as apiLogout, getMe } from '@/api/auth';
+import { login as apiLogin, register as apiRegister, logout as apiLogout, getMe, resendConfirmation as apiResendConfirmation } from '@/api/auth';
 
 interface AuthState {
   user: AuthUser | null;
@@ -17,6 +17,8 @@ interface AuthState {
   logout: () => Promise<void>;
   restoreSession: () => Promise<void>;
   clearError: () => void;
+  updateUser: (userUpdates: Partial<AuthUser>) => void;
+  resendConfirmation: (email: string) => Promise<void>;
 }
 
 const useAuthStore = create<AuthState>((set) => ({
@@ -35,8 +37,15 @@ const useAuthStore = create<AuthState>((set) => ({
   register: async (payload: RegisterPayload) => {
     set({ error: null });
     const user = await apiRegister(payload);
-    setSentryUser({ id: user.id, email: user.email, name: user.name });
-    set({ user, isAuthenticated: true });
+    
+    // Only set as authenticated if we actually have an access token (Supabase might require confirmation)
+    if (user.token) {
+      setSentryUser({ id: user.id, email: user.email, name: user.name });
+      set({ user, isAuthenticated: true });
+    } else {
+      // If no token, user is created but needs verification — don't log them in yet
+      throw new Error("Account created! Please check your email for a verification link.");
+    }
   },
 
   logout: async () => {
@@ -68,6 +77,15 @@ const useAuthStore = create<AuthState>((set) => ({
   },
 
   clearError: () => set({ error: null }),
+
+  updateUser: (userUpdates: Partial<AuthUser>) => 
+    set((state) => ({
+      user: state.user ? { ...state.user, ...userUpdates } : null
+    })),
+
+  resendConfirmation: async (email: string) => {
+    await apiResendConfirmation(email);
+  },
 }));
 
 export default useAuthStore;

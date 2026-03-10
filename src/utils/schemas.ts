@@ -5,6 +5,8 @@ export const loginSchema = z.object({
   email: z
     .string()
     .min(1, 'Email is required')
+    .trim()
+    .toLowerCase()
     .email('Enter a valid email address'),
   password: z
     .string()
@@ -25,6 +27,8 @@ export const registerSchema = z
     email: z
       .string()
       .min(1, 'Email is required')
+      .trim()
+      .toLowerCase()
       .email('Enter a valid email address'),
     password: z
       .string()
@@ -67,7 +71,13 @@ export const createTaskSchema = z.object({
     .min(1, 'Title is required')
     .max(100, 'Title is too long'),
   description: z.string().max(1000, 'Description is too long').optional(),
-  responsibleOwnerId: z.string().min(1, 'Responsible owner is required'),
+  participants: z.array(z.object({
+    userId: z.string(),
+    role: z.enum(['CONTRIBUTOR', 'HELPER', 'REVIEWER', 'OBSERVER']),
+  })),
+  milestones: z.array(z.object({
+    title: z.string().min(1, 'Milestone title is required'),
+  })),
 });
 
 export type CreateTaskFormValues = z.infer<typeof createTaskSchema>;
