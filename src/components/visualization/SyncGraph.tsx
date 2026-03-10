@@ -3,8 +3,22 @@ import { View, StyleSheet, Dimensions } from 'react-native';
 import Svg, { Circle, Line, Text as SvgText, G } from 'react-native-svg';
 import * as d3 from 'd3-force';
 import { useNavigation } from '@react-navigation/native';
-import { Task, SYNC_STATUS_COLORS } from '@/types';
+import { Task, SYNC_STATUS_COLORS, ROLE_COLORS } from '@/types';
 import useSyncStore from '@/stores/syncStore';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  useAnimatedProps,
+  withRepeat, 
+  withTiming, 
+  withSequence, 
+  withSpring,
+  Easing 
+} from 'react-native-reanimated';
+
+const AnimatedGNode = Animated.createAnimatedComponent(G);
+const AnimatedCircleNode = Animated.createAnimatedComponent(Circle);
+const AnimatedLineNode = Animated.createAnimatedComponent(Line);
 
 interface SyncGraphProps {
   task: Task;
@@ -38,7 +52,7 @@ export default function SyncGraph({ task }: SyncGraphProps) {
       fy: HEIGHT / 2,
     });
 
-    task.participants.forEach((p) => {
+    (task?.participants || []).forEach((p) => {
       nds.push({
         id: p.userId,
         participant: p,
@@ -55,7 +69,7 @@ export default function SyncGraph({ task }: SyncGraphProps) {
 
       // Simple cluster rules: Contributors link to Responsible owner
       if (p.role === 'CONTRIBUTOR' || p.role === 'HELPER') {
-        const owner = task.participants.find(pt => pt.role === 'RESPONSIBLE');
+        const owner = (task?.participants || []).find(pt => pt.role === 'RESPONSIBLE');
         if (owner) {
           lnks.push({
             source: p.userId,
@@ -67,7 +81,7 @@ export default function SyncGraph({ task }: SyncGraphProps) {
     });
 
     return { initialNodes: nds, initialLinks: lnks };
-  }, [task]);
+  }, [task, width]);
 
   // Run d3-force simulation
   useEffect(() => {
@@ -87,7 +101,7 @@ export default function SyncGraph({ task }: SyncGraphProps) {
 
     setNodes(simulationNodes);
     setLinks(simulationLinks);
-  }, [initialNodes, initialLinks]);
+  }, [initialNodes, initialLinks, width]);
 
   const handleNodePress = (node: any) => {
     if (node.isRoot) return;
@@ -108,70 +122,151 @@ export default function SyncGraph({ task }: SyncGraphProps) {
         <Svg style={StyleSheet.absoluteFill}>
           {/* Draw Links */}
           {links.map((link, i) => (
-            <Line
+            <AnimatedLink
               key={`link-${i}`}
-              x1={link.source.x}
-              y1={link.source.y}
-              x2={link.target.x}
-              y2={link.target.y}
-              stroke="#1e2240"
-              strokeWidth="2"
-              strokeDasharray={link.source.id !== 'root-task' && link.target.id !== 'root-task' ? '5,5' : ''}
+              link={link}
             />
           ))}
 
           {/* Draw Nodes */}
-          {nodes.map(node => {
-            const syncStatus = node.participant ? (liveStatuses[node.id] || node.participant.syncStatus) : 'IN_SYNC';
-            const color = node.isRoot ? '#5a6ff4' : (SYNC_STATUS_COLORS[syncStatus] || '#fff');
-            
-            return (
-              <G 
-                key={node.id}
-                x={node.x}
-                y={node.y}
-                onPress={() => handleNodePress(node)}
-              >
-                <Circle
-                  cx={0}
-                  cy={0}
-                  r={node.radius}
-                  fill="#1a1d27"
-                  stroke={color}
-                  strokeWidth={node.isRoot ? 0 : 3}
-                />
-                <SvgText
-                  x={0}
-                  y={5}
-                  fill="#f0f4ff"
-                  fontSize={node.isRoot ? 14 : 16}
-                  fontWeight="bold"
-                  textAnchor="middle"
-                >
-                  {node.isRoot ? 'T' : node.label.charAt(0).toUpperCase()}
-                </SvgText>
-                <SvgText
-                  x={0}
-                  y={node.radius + 16}
-                  fill="#a0aabe"
-                  fontSize="11"
-                  textAnchor="middle"
-                >
-                  {node.isRoot ? '' : node.label.split(' ')[0]}
-                </SvgText>
-              </G>
-            );
-          })}
+          {nodes.map(node => (
+            <GraphNode 
+              key={node.id}
+              node={node}
+              liveStatus={liveStatuses[node.id]}
+              onPress={() => handleNodePress(node)}
+            />
+          ))}
         </Svg>
       )}
     </View>
   );
 }
 
+function AnimatedLink({ link }: any) {
+  const dashOffset = useSharedValue(0);
+
+  useEffect(() => {
+    dashOffset.value = withRepeat(
+      withTiming(-20, { duration: 1000, easing: Easing.linear }),
+      -1,
+      false
+    );
+  }, []);
+
+  const animatedProps = useAnimatedProps(() => ({
+    strokeDashoffset: dashOffset.value,
+  }));
+
+  const isDashed = (link.source.id !== 'root-task' && link.target.id !== 'root-task') || link.source.status === 'PENDING';
+
+  return (
+    <AnimatedLineNode
+      x1={link.source.x}
+      y1={link.source.y}
+      x2={link.target.x}
+      y2={link.target.y}
+      stroke={link.source.status === 'PENDING' ? '#3F3F46' : '#27272A'}
+      strokeWidth="2"
+      strokeDasharray={isDashed ? "5,5" : "10,5"}
+      animatedProps={animatedProps}
+    />
+  );
+}
+
+function GraphNode({ node, liveStatus, onPress }: any) {
+  const syncStatus = node.participant ? (liveStatus || node.participant.syncStatus) : 'IN_SYNC';
+  const isPending = node.participant?.status === 'PENDING';
+  const baseColor = node.isRoot 
+    ? '#A3E635' 
+    : isPending 
+      ? '#3F3F46' 
+      : (ROLE_COLORS[node.participant?.role as keyof typeof ROLE_COLORS] || SYNC_STATUS_COLORS[syncStatus as keyof typeof SYNC_STATUS_COLORS] || '#fff');
+  
+  const pulse = useSharedValue(1);
+
+  useEffect(() => {
+    // Pulsing effect for focused or problematic nodes
+    if (syncStatus === 'BLOCKED' || syncStatus === 'HELP_REQUESTED' || node.isRoot) {
+      pulse.value = withRepeat(
+        withSequence(
+          withTiming(1.2, { duration: 1000 }),
+          withTiming(1, { duration: 1000 })
+        ),
+        -1,
+        true
+      );
+    } else {
+       pulse.value = withSpring(1);
+    }
+  }, [syncStatus]);
+
+  const animatedCircleProps = useAnimatedProps(() => ({
+    r: node.radius + 4 * pulse.value,
+    opacity: pulse.value > 1.1 ? 0.8 : 1,
+  }));
+
+  const animatedGProps = useAnimatedProps(() => ({
+    transform: [{ scale: pulse.value > 1.1 ? 1.05 : 1 }],
+  }));
+
+  return (
+    <AnimatedGNode 
+      x={node.x}
+      y={node.y}
+      onPress={onPress}
+    >
+      <AnimatedGNode 
+        animatedProps={animatedGProps}
+      >
+        {/* Outer Glow Ring */}
+        <AnimatedCircleNode
+          cx={0}
+          cy={0}
+          fill="transparent"
+          stroke={baseColor}
+          strokeWidth="2"
+          strokeDasharray={isPending ? "4,4" : "0"}
+          animatedProps={animatedCircleProps}
+        />
+        <Circle
+          cx={0}
+          cy={0}
+          r={node.radius}
+          fill="#18181B"
+          stroke={baseColor}
+          strokeWidth="3"
+          strokeDasharray={isPending ? "4,4" : "0"}
+          opacity={isPending ? 0.6 : 1}
+        />
+        <SvgText
+          x={0}
+          y={5}
+          fill={isPending ? '#52525B' : '#F8FAFC'}
+          fontSize={node.isRoot ? 14 : 16}
+          fontWeight="bold"
+          textAnchor="middle"
+        >
+          {node.isRoot ? 'T' : node.label.charAt(0).toUpperCase()}
+        </SvgText>
+      </AnimatedGNode>
+      <SvgText
+        x={0}
+        y={node.radius + 16}
+        fill="#A1A1AA"
+        fontSize="11"
+        textAnchor="middle"
+      >
+        {node.isRoot ? '' : node.label.split(' ')[0]}
+      </SvgText>
+    </AnimatedGNode>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     height: HEIGHT,
-    backgroundColor: '#0f1117',
+    backgroundColor: '#09090B',
     overflow: 'hidden',
   },
 });
