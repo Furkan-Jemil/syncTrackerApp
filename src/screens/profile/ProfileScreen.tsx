@@ -1,220 +1,330 @@
-import React, { useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import Header from '@/components/common/Header';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Platform, StatusBar, Image, Alert, ActivityIndicator } from 'react-native';
 import useAuthStore from '@/stores/authStore';
-import useTaskStore from '@/stores/taskStore';
-import dayjs from 'dayjs';
+import Header from '@/components/common/Header';
+import * as ImagePicker from 'expo-image-picker';
+import { getUserStats, uploadAvatar } from '@/api/users';
+import { useNavigation } from '@react-navigation/native';
 
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
-  const user = useAuthStore(s => s.user);
-  const { tasks, fetchTasks, isLoading } = useTaskStore();
+  const { user, logout, updateUser } = useAuthStore();
+  const [stats, setStats] = useState({
+    tasksResponsible: 0,
+    tasksContributed: 0,
+    milestonesHit: 0,
+    timeLogged: 0,
+  });
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
-    fetchTasks();
-  }, []);
+    if (user?.id) {
+      loadStats();
+    }
+  }, [user?.id]);
 
-  // Compute analytics from tasks where user is a participant
-  const analytics = useMemo(() => {
-    let totalTime = 0;
-    let helpRequests = 0;
+  const loadStats = async () => {
+    try {
+      if (!user) return;
+      const data = await getUserStats(user.id);
+      setStats(data);
+    } catch (err) {
+      console.error("Stats fetching error", err);
+    } finally {
+      setIsLoadingStats(false);
+    }
+  };
 
-    tasks.forEach(task => {
-      const myParticipation = task.participants.find(p => p.userId === user?.id);
-      if (myParticipation) {
-        totalTime += myParticipation.totalTimeLogged || 0;
-        helpRequests += myParticipation.helpRequestCount || 0;
+  const handlePickImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Sorry, we need camera roll permissions to update your avatar.');
+        return;
       }
-    });
 
-    return { totalTime, helpRequests, activeTasks: tasks.length };
-  }, [tasks, user?.id]);
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
 
-  if (isLoading && tasks.length === 0) {
-    return (
-      <View style={styles.flexCentered}>
-        <ActivityIndicator color="#5a6ff4" />
-      </View>
-    );
-  }
-
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setIsUploading(true);
+        const publicUrl = await uploadAvatar(user!.id, result.assets[0].uri);
+        updateUser({ avatar_url: publicUrl });
+      }
+    } catch (error) {
+      console.error("Image picking/uploading error", error);
+      Alert.alert("Upload Failed", "Could not upload the new profile picture.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+  
   return (
-    <View style={styles.flex}>
-      <Header 
-        title="Profile" 
-        rightElement={
-          <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
-            <Text style={styles.settingsIcon}>⚙️</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <Header title="Command Profile" />
+      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+        
+        {/* Profile Card */}
+        <View style={styles.profileCard}>
+          <TouchableOpacity 
+            style={styles.avatarContainer} 
+            onPress={handlePickImage} 
+            disabled={isUploading}
+            activeOpacity={0.7}
+          >
+            {user?.avatar_url ? (
+              <Image source={{ uri: user.avatar_url }} style={styles.avatarImage} />
+            ) : (
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{user?.name?.charAt(0).toUpperCase() || 'U'}</Text>
+              </View>
+            )}
+            
+            {/* Upload indicator overlay */}
+            {isUploading ? (
+              <View style={styles.uploadOverlay}>
+                <ActivityIndicator color="#052E16" size="small" />
+              </View>
+            ) : null}
           </TouchableOpacity>
-        }
-      />
-      
-      <ScrollView contentContainerStyle={styles.container}>
-        {/* User Card */}
-        <View style={styles.userCard}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{user?.name?.charAt(0) || 'U'}</Text>
-          </View>
-          <View>
-            <Text style={styles.name}>{user?.name}</Text>
-            <Text style={styles.email}>{user?.email}</Text>
-            <Text style={styles.memberSince}>Member since {dayjs(user?.createdAt).format('MMM YYYY')}</Text>
+          
+          <Text style={styles.name}>{user?.name || 'Unknown Officer'}</Text>
+          <Text style={styles.email}>{user?.email || 'No email provided'}</Text>
+          
+          <TouchableOpacity 
+            style={styles.editBtn}
+            onPress={() => navigation.navigate('ProfileEdit')}
+          >
+            <Text style={styles.editBtnText}>Edit Profile</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Global Stats */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>GLOBAL METRICS</Text>
+          {isLoadingStats ? (
+            <ActivityIndicator style={{ marginTop: 20 }} color="#A3E635" />
+          ) : (
+            <View style={styles.statsGrid}>
+              <View style={styles.statBox}>
+                <Text style={styles.statValue}>{stats.tasksResponsible}</Text>
+                <Text style={styles.statLabel}>Tasks Responsible</Text>
+              </View>
+              <View style={styles.statBox}>
+                <Text style={styles.statValue}>{stats.tasksContributed}</Text>
+                <Text style={styles.statLabel}>Tasks Contributed</Text>
+              </View>
+              <View style={styles.statBox}>
+                <Text style={styles.statValue}>{stats.milestonesHit}</Text>
+                <Text style={styles.statLabel}>Milestones Hit</Text>
+              </View>
+              <View style={styles.statBox}>
+                <Text style={styles.statValue}>{Math.round(stats.timeLogged / 60)}h</Text>
+                <Text style={styles.statLabel}>Time Logged</Text>
+              </View>
+            </View>
+          )}
+        </View>
+
+        {/* Settings Links */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>SYSTEM SETTINGS</Text>
+          <View style={styles.linksCard}>
+            <TouchableOpacity 
+              style={styles.linkRow}
+              onPress={() => navigation.navigate('NotificationSettings')}
+            >
+              <Text style={styles.linkText}>Notification Preferences</Text>
+              <Text style={styles.linkArrow}>→</Text>
+            </TouchableOpacity>
+            <View style={styles.divider} />
+            <TouchableOpacity 
+              style={styles.linkRow}
+              onPress={() => navigation.navigate('ThemeSettings')}
+            >
+              <Text style={styles.linkText}>Theme Configuration</Text>
+              <Text style={styles.linkArrow}>→</Text>
+            </TouchableOpacity>
+            <View style={styles.divider} />
+            <TouchableOpacity 
+              style={styles.linkRow}
+              onPress={() => navigation.navigate('TeamConfiguration')}
+            >
+              <Text style={styles.linkText}>Team Configuration</Text>
+              <Text style={styles.linkArrow}>→</Text>
+            </TouchableOpacity>
+            <View style={styles.divider} />
+            <TouchableOpacity 
+              style={styles.linkRow}
+              onPress={() => navigation.navigate('SecuritySettings')}
+            >
+              <Text style={styles.linkText}>Security & Access</Text>
+              <Text style={styles.linkArrow}>→</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
-        {/* Global Analytics */}
-        <Text style={styles.sectionTitle}>My Impact</Text>
-        <View style={styles.statsGrid}>
-          <View style={styles.statBox}>
-            <Text style={styles.statLabel}>Active Tasks</Text>
-            <Text style={styles.statValue}>{analytics.activeTasks}</Text>
-          </View>
-          <View style={styles.statBox}>
-            <Text style={styles.statLabel}>Time Logged</Text>
-            <Text style={styles.statValue}>{analytics.totalTime}m</Text>
-          </View>
-          <View style={styles.statBox}>
-            <Text style={styles.statLabel}>Help Requests</Text>
-            <Text style={styles.statValue}>{analytics.helpRequests}</Text>
-          </View>
-        </View>
-
-        {/* Recent Tasks List */}
-        <Text style={styles.sectionTitle}>My Responsibilities</Text>
-        {tasks.length === 0 ? (
-          <View style={styles.taskCard}>
-            <Text style={styles.taskTitle}>No tasks yet</Text>
-          </View>
-        ) : (
-          tasks.slice(0, 5).map(task => {
-            const myParticipation = task.participants.find(p => p.userId === user?.id);
-            return (
-              <TouchableOpacity 
-                key={task.id} 
-                style={styles.taskCard}
-                onPress={() => navigation.navigate('HomeStack', { screen: 'TaskDetail', params: { taskId: task.id } })}
-              >
-                <Text style={styles.taskTitle}>{task.title}</Text>
-                <View style={styles.taskMeta}>
-                  <Text style={styles.taskRole}>{myParticipation?.role || 'Member'}</Text>
-                  <Text style={styles.taskTime}>
-                    Updated {dayjs(task.updatedAt).fromNow()}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            );
-          })
-        )}
+        <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
+          <Text style={styles.logoutText}>Terminate Session (Logout)</Text>
+        </TouchableOpacity>
+        
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: '#0f1117' },
-  flexCentered: { flex: 1, backgroundColor: '#0f1117', alignItems: 'center', justifyContent: 'center' },
-  container: { padding: 20 },
-  settingsIcon: { fontSize: 20 },
-  userCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1a1d27',
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#09090B',
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+  },
+  container: {
     padding: 20,
-    borderRadius: 16,
-    marginBottom: 24,
+    paddingBottom: 120, // Accommodate floating tab bar
+  },
+  profileCard: {
+    backgroundColor: '#18181B',
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 32,
     borderWidth: 1,
-    borderColor: '#2e3148',
+    borderColor: '#27272A',
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginBottom: 16,
   },
   avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#2e3148',
-    alignItems: 'center',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#A3E635', // Neon main color
     justifyContent: 'center',
-    marginRight: 16,
+    alignItems: 'center',
+  },
+  avatarImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+    borderColor: '#A3E635',
+  },
+  uploadOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    borderRadius: 40,
+    backgroundColor: 'rgba(163, 230, 53, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   avatarText: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#f0f4ff',
+    fontFamily: 'SpaceGrotesk_700Bold',
+    fontSize: 32,
+    color: '#052E16',
   },
   name: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#f0f4ff',
+    fontFamily: 'SpaceGrotesk_700Bold',
+    fontSize: 24,
+    color: '#F8FAFC',
     marginBottom: 4,
   },
   email: {
-    fontSize: 14,
-    color: '#a0aabe',
-    marginBottom: 4,
+    fontFamily: 'Inter_400Regular',
+    fontSize: 15,
+    color: '#A1A1AA',
+    marginBottom: 20,
   },
-  memberSince: {
-    fontSize: 12,
-    color: '#6370a0',
+  editBtn: {
+    backgroundColor: '#27272A',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 9999, // Pill outline button
+  },
+  editBtnText: {
+    fontFamily: 'Inter_600SemiBold',
+    color: '#F8FAFC',
+    fontSize: 14,
+  },
+  section: {
+    marginBottom: 32,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#f0f4ff',
+    fontFamily: 'Inter_700Bold',
+    fontSize: 12,
+    color: '#F7FEE7',
     marginBottom: 16,
-    marginTop: 8,
+    letterSpacing: 1,
   },
   statsGrid: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 24,
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 16,
   },
   statBox: {
-    flex: 1,
-    backgroundColor: '#1a1d27',
-    padding: 16,
-    borderRadius: 12,
+    width: '47%',
+    backgroundColor: '#18181B',
+    padding: 20,
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#2e3148',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#6370a0',
-    marginBottom: 8,
+    borderColor: '#27272A',
   },
   statValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#f0f4ff',
+    fontFamily: 'SpaceGrotesk_700Bold',
+    fontSize: 32,
+    color: '#A3E635',
+    marginBottom: 4,
   },
-  taskCard: {
-    backgroundColor: '#1a1d27',
-    padding: 16,
-    borderRadius: 12,
+  statLabel: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 13,
+    color: '#A1A1AA',
+  },
+  linksCard: {
+    backgroundColor: '#18181B',
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#2e3148',
-    marginBottom: 12,
+    borderColor: '#27272A',
+    overflow: 'hidden',
   },
-  taskTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#f0f4ff',
-    marginBottom: 8,
-  },
-  taskMeta: {
+  linkRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    padding: 20,
   },
-  taskRole: {
-    fontSize: 12,
-    color: '#5a6ff4',
-    fontWeight: '600',
-    backgroundColor: '#5a6ff420',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+  linkText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 15,
+    color: '#F8FAFC',
   },
-  taskTime: {
-    fontSize: 12,
-    color: '#6370a0',
+  linkArrow: {
+    fontSize: 18,
+    color: '#A1A1AA',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#27272A',
+  },
+  logoutBtn: {
+    backgroundColor: 'rgba(239, 68, 68, 0.1)', // #EF444420
+    borderWidth: 1,
+    borderColor: '#EF4444',
+    padding: 16,
+    borderRadius: 9999, // Pill shape
+    alignItems: 'center',
+    marginVertical: 16,
+  },
+  logoutText: {
+    fontFamily: 'Inter_700Bold',
+    color: '#FCA5A5',
+    fontSize: 15,
   },
 });
