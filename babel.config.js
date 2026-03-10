@@ -1,10 +1,11 @@
 module.exports = function (api) {
   api.cache(true);
   return {
-    presets: ['babel-preset-expo'],
-    plugins: [
-      // NativeWind must come before module-resolver
+    presets: [
+      ['babel-preset-expo', { jsxImportSource: 'nativewind' }],
       'nativewind/babel',
+    ],
+    plugins: [
       // Path alias resolution
       [
         'module-resolver',
