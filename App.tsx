@@ -1,7 +1,9 @@
 import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
+import { useColorScheme } from 'react-native';
 import * as Sentry from '@sentry/react-native';
 import * as SplashScreen from 'expo-splash-screen';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { 
   useFonts,
   Inter_400Regular,
@@ -23,6 +25,22 @@ SplashScreen.preventAutoHideAsync();
 
 // Initialize Sentry before first render
 initSentry();
+
+// Configure Google Sign-in once at app startup
+GoogleSignin.configure({
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+  offlineAccess: true,
+});
+
+function MainContent() {
+  return (
+    <>
+      <StatusBar style="auto" />
+      <NotificationBanner />
+      <RootNavigator />
+    </>
+  );
+}
 
 function RootApp() {
   const [fontsLoaded, fontError] = useFonts({
@@ -46,9 +64,7 @@ function RootApp() {
 
   return (
     <AppProviders>
-      <StatusBar style="light" />
-      <NotificationBanner />
-      <RootNavigator />
+      <MainContent />
     </AppProviders>
   );
 }
