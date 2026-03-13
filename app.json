@@ -6,20 +6,22 @@
     "orientation": "portrait",
     "icon": "./assets/app-logo.png",
     "userInterfaceStyle": "dark",
+    "scheme": "synctracker",
     "splash": {
       "image": "./assets/app-logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#09090B"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.synctracker.app",
+      "icon": "./assets/app-logo.png"
     },
     "android": {
+      "package": "com.synctracker.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#09090B",
+        "foregroundImage": "./assets/app-logo.png"
       },
       "predictiveBackGestureEnabled": false
     },
@@ -28,7 +30,18 @@
     },
     "plugins": [
       "expo-secure-store",
-      "expo-font"
-    ]
+      "expo-font",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.YOUR_IOS_CLIENT_ID"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "0335ceaa-c873-43ca-8a58-45c75576369b"
+      }
+    }
   }
 }
