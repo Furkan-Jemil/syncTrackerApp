@@ -1,10 +1,5 @@
-import apiClient from '@/lib/axios';
-import {
-  Participant,
-  ParticipantRole,
-  SyncStatus,
-  ApiResponse,
-} from '@/types';
+import apiClient from "@/lib/axios";
+import { Participant, ParticipantRole, SyncStatus, ApiResponse } from "@/types";
 
 // ── Participant Management ────────────────────
 
@@ -14,15 +9,15 @@ export async function addParticipant(
   role: ParticipantRole,
 ): Promise<Participant> {
   const { data } = await apiClient.post(
-    '/participants',
-    { 
-      task_id: taskId, 
-      user_id: userId, 
+    "/participants",
+    {
+      task_id: taskId,
+      user_id: userId,
       role,
-      status: 'PENDING',
-      sync_status: 'IN_SYNC'
+      status: "PENDING",
+      sync_status: "IN_SYNC",
     },
-    { headers: { 'Prefer': 'return=representation' } }
+    { headers: { Prefer: "return=representation" } },
   );
   const participant = Array.isArray(data) ? data[0] : data;
   return participant;
@@ -33,33 +28,47 @@ export async function addParticipant(
 export async function updateParticipantStatus(
   taskId: string,
   userId: string,
-  status: 'ACCEPTED' | 'REJECTED'
+  status: "ACCEPTED" | "REJECTED",
 ): Promise<Participant> {
+  if (!taskId || !userId) {
+    throw new Error("updateParticipantStatus called without taskId or userId");
+  }
   const { data } = await apiClient.patch(
     `/participants?task_id=eq.${taskId}&user_id=eq.${userId}`,
-    { 
-      status, 
-      accepted_at: status === 'ACCEPTED' ? new Date().toISOString() : null 
+    {
+      status,
+      accepted_at: status === "ACCEPTED" ? new Date().toISOString() : null,
     },
-    { headers: { 'Prefer': 'return=representation' } }
+    { headers: { Prefer: "return=representation" } },
   );
   const participant = Array.isArray(data) ? data[0] : data;
   return participant;
 }
 
-export async function rejectTask(taskId: string, userId: string): Promise<void> {
-  await apiClient.delete(`/participants?task_id=eq.${taskId}&user_id=eq.${userId}`);
+export async function rejectTask(
+  taskId: string,
+  userId: string,
+): Promise<void> {
+  if (!taskId || !userId) {
+    throw new Error("rejectTask called without taskId or userId");
+  }
+  await apiClient.delete(
+    `/participants?task_id=eq.${taskId}&user_id=eq.${userId}`,
+  );
 }
 
 export async function updateParticipantRole(
   taskId: string,
   userId: string,
-  role: ParticipantRole
+  role: ParticipantRole,
 ): Promise<Participant> {
+  if (!taskId || !userId) {
+    throw new Error("updateParticipantRole called without taskId or userId");
+  }
   const { data } = await apiClient.patch(
     `/participants?task_id=eq.${taskId}&user_id=eq.${userId}`,
     { role },
-    { headers: { 'Prefer': 'return=representation' } }
+    { headers: { Prefer: "return=representation" } },
   );
   return Array.isArray(data) ? data[0] : data;
 }
@@ -70,23 +79,26 @@ export async function updateSyncStatus(
   status: SyncStatus,
   note?: string,
 ): Promise<Participant> {
+  if (!taskId || !userId) {
+    throw new Error("updateSyncStatus called without taskId or userId");
+  }
   const { data } = await apiClient.patch(
     `/participants?task_id=eq.${taskId}&user_id=eq.${userId}`,
-    { 
-      sync_status: status, 
+    {
+      sync_status: status,
       notes: note,
-      last_sync_at: new Date().toISOString()
+      last_sync_at: new Date().toISOString(),
     },
-    { headers: { 'Prefer': 'return=representation' } }
+    { headers: { Prefer: "return=representation" } },
   );
-  
+
   // Resilient synchronization logging
   try {
-    await apiClient.post('/sync_logs', {
+    await apiClient.post("/sync_logs", {
       task_id: taskId,
       user_id: userId,
-      type: 'SYNC_STATUS_CHANGED',
-      message: `${status.replace('_', ' ')}: ${note || 'No notes provided'}`,
+      type: "SYNC_STATUS_CHANGED",
+      message: `${status.replace("_", " ")}: ${note || "No notes provided"}`,
     });
   } catch (logErr) {
     console.warn("Sync status updated, but log entry failed:", logErr);
@@ -103,6 +115,6 @@ export async function updateSyncStatus(
     totalTimeLogged: pRaw.total_time_logged,
     helpRequestCount: pRaw.help_request_count,
     createdAt: pRaw.created_at,
-    updatedAt: pRaw.updated_at
+    updatedAt: pRaw.updated_at,
   } as Participant;
 }
