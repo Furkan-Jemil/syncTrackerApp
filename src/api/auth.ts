@@ -1,4 +1,5 @@
 import * as SecureStore from 'expo-secure-store';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import apiClient, { TOKEN_KEY } from '@/lib/axios';
 import {
   AuthUser,
@@ -135,3 +136,44 @@ export async function resendConfirmation(email: string): Promise<void> {
   );
 }
 
+// ── Google OAuth ──────────────────────────────
+export async function loginWithGoogle(): Promise<AuthUser> {
+  try {
+    // Check if Play Services are available (Android)
+    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+  } catch (e: any) {
+    console.error('Google Sign-in Play Services error:', e.message);
+    throw new Error('Google Sign-in failed: Play Services unavailable.');
+  }
+  
+  // Trigger Google sign-in flow
+  const response = await GoogleSignin.signIn();
+  const idToken = response?.data?.idToken;
+  
+  if (!idToken) {
+    throw new Error('Google sign-in failed: no ID token returned.');
+  }
+
+  // Exchange Google ID token with Supabase GoTrue
+  const { data } = await apiClient.post(
+    `${AUTH_BASE_URL}/token?grant_type=id_token`,
+    {
+      provider: 'google',
+      id_token: idToken,
+    },
+    { headers: { apikey: API_KEY } }
+  );
+
+  const user: AuthUser = {
+    id: data.user.id,
+    email: data.user.email,
+    name: data.user.user_metadata?.full_name || data.user.user_metadata?.name || 'User',
+    token: data.access_token,
+    createdAt: data.user.created_at,
+    avatar_url: data.user.user_metadata?.avatar_url,
+  };
+
+  await SecureStore.setItemAsync(TOKEN_KEY, user.token);
+  await syncUserProfile(user);
+  return user;
+}
