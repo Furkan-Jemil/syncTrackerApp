@@ -1,5 +1,5 @@
 import apiClient from '@/lib/axios';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 export interface AttachmentPayload {
   task_id: string;
