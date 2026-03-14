@@ -7,6 +7,7 @@ import {
   TouchableOpacityProps,
   ViewStyle,
 } from 'react-native';
+import { useAppTheme } from '@/hooks/useAppTheme';
 
 interface PrimaryButtonProps extends TouchableOpacityProps {
   title: string;
@@ -24,13 +25,14 @@ export default function PrimaryButton({
   ...rest
 }: PrimaryButtonProps) {
   const isDisabled = disabled || isLoading;
+  const theme = useAppTheme();
 
   return (
     <TouchableOpacity
       style={[
         styles.base,
-        variant === 'primary' && styles.primary,
-        variant === 'outline' && styles.outline,
+        variant === 'primary' && [styles.primary, { backgroundColor: theme.primary, shadowColor: theme.primary }],
+        variant === 'outline' && [styles.outline, { borderColor: theme.primary }],
         variant === 'ghost' && styles.ghost,
         isDisabled && styles.disabled,
         style,
@@ -41,16 +43,16 @@ export default function PrimaryButton({
     >
       {isLoading ? (
         <ActivityIndicator
-          color={variant === 'primary' ? '#09090B' : '#A3E635'}
+          color={variant === 'primary' ? (theme.background === '#09090B' ? '#052E16' : '#FFFFFF') : theme.primary}
           size="small"
         />
       ) : (
         <Text
           style={[
             styles.text,
-            variant === 'primary' && styles.textPrimary,
-            variant === 'outline' && styles.textOutline,
-            variant === 'ghost' && styles.textGhost,
+            variant === 'primary' && [styles.textPrimary, { color: theme.background === '#09090B' ? '#052E16' : '#FFFFFF' }],
+            variant === 'outline' && [styles.textOutline, { color: theme.primary }],
+            variant === 'ghost' && [styles.textGhost, { color: theme.primary }],
           ]}
         >
           {title}
