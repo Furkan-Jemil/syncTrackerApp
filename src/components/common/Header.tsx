@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAppTheme } from '@/hooks/useAppTheme';
 
 interface HeaderProps {
   title: string;
@@ -12,9 +13,14 @@ interface HeaderProps {
 export default function Header({ title, showBack = false, rightElement }: HeaderProps) {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const theme = useAppTheme();
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
+    <View style={[styles.container, { 
+      paddingTop: insets.top + 12, 
+      backgroundColor: theme.background,
+      borderBottomColor: theme.border
+    }]}>
       <View style={styles.left}>
         {showBack && (
           <TouchableOpacity
@@ -22,12 +28,12 @@ export default function Header({ title, showBack = false, rightElement }: Header
             style={styles.backButton}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <Text style={styles.backIcon}>←</Text>
+            <Text style={[styles.backIcon, { color: theme.textSecondary }]}>←</Text>
           </TouchableOpacity>
         )}
       </View>
 
-      <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
+      <Text style={[styles.title, { color: theme.text }]} numberOfLines={1} ellipsizeMode="tail">
         {title}
       </Text>
 
