@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { 
   useAnimatedStyle, 
@@ -30,21 +30,29 @@ export default function NotificationBanner() {
   const { isVisible, message, type, hideNotification } = useNotificationStore();
   const insets = useSafeAreaInsets();
   const translateY = useSharedValue(-150);
+  const [isRendered, setIsRendered] = useState(false);
 
   useEffect(() => {
     if (isVisible) {
+      setIsRendered(true);
       translateY.value = withSpring(insets.top + 10, { damping: 14, stiffness: 100 });
       
-      // Auto dismiss after 4 seconds
       const timer = setTimeout(() => {
-        translateY.value = withTiming(-150, { duration: 300 }, () => {
-          runOnJS(hideNotification)();
+        translateY.value = withTiming(-150, { duration: 300 }, (finished) => {
+          if (finished) {
+            runOnJS(setIsRendered)(false);
+            runOnJS(hideNotification)();
+          }
         });
       }, 4000);
       
       return () => clearTimeout(timer);
     } else {
-      translateY.value = withTiming(-150, { duration: 300 });
+      translateY.value = withTiming(-150, { duration: 300 }, (finished) => {
+        if (finished) {
+          runOnJS(setIsRendered)(false);
+        }
+      });
     }
   }, [isVisible, insets.top]);
 
@@ -52,7 +60,7 @@ export default function NotificationBanner() {
     transform: [{ translateY: translateY.value }],
   }));
 
-  if (!isVisible && translateY.value === -150) return null;
+  if (!isRendered) return null;
 
   const getColors = () => {
     switch(type) {
