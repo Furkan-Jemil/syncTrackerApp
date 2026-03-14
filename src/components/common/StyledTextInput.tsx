@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
+import { useAppTheme } from '@/hooks/useAppTheme';
 
 interface StyledTextInputProps extends TextInputProps {
   label: string;
@@ -18,21 +19,23 @@ const StyledTextInput = forwardRef<TextInput, StyledTextInputProps>(
   ({ label, error, isPassword, style, ...rest }, ref) => {
     const [secure, setSecure] = useState(isPassword ?? false);
     const [focused, setFocused] = useState(false);
+    const theme = useAppTheme();
 
     return (
       <View style={styles.wrapper}>
-        <Text style={styles.label}>{label}</Text>
+        <Text style={[styles.label, { color: theme.textMuted }]}>{label}</Text>
         <View
           style={[
             styles.inputRow,
-            focused && styles.inputRowFocused,
-            !!error && styles.inputRowError,
+            { backgroundColor: theme.surface, borderColor: theme.border },
+            focused && [styles.inputRowFocused, { borderColor: theme.primary, backgroundColor: theme.surface }],
+            !!error && [styles.inputRowError, { borderColor: theme.error }],
           ]}
         >
           <TextInput
             ref={ref}
-            style={[styles.input, style]}
-            placeholderTextColor="#64748B"
+            style={[styles.input, { color: theme.text }, style]}
+            placeholderTextColor={theme.textMuted}
             secureTextEntry={secure}
             autoCapitalize="none"
             onFocus={() => setFocused(true)}
@@ -45,11 +48,11 @@ const StyledTextInput = forwardRef<TextInput, StyledTextInputProps>(
               style={styles.eyeButton}
               hitSlop={8}
             >
-              <Text style={styles.eyeIcon}>{secure ? '👁' : '🙈'}</Text>
+              <Text style={[styles.eyeIcon, { color: theme.textSecondary }]}>{secure ? '👁' : '🙈'}</Text>
             </TouchableOpacity>
           )}
         </View>
-        {!!error && <Text style={styles.errorText}>{error}</Text>}
+        {!!error && <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>}
       </View>
     );
   },
