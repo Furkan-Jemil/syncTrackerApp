@@ -12,6 +12,7 @@ import Animated, {
 import { useEffect } from 'react';
 import { SyncStatus } from '@/types';
 import StatusBadge from '../common/StatusBadge';
+import { useAppTheme } from '@/hooks/useAppTheme';
 
 interface TaskCardProps {
   title: string;
@@ -22,6 +23,7 @@ interface TaskCardProps {
 }
 
 export default function TaskCard({ title, responsibleName, participantCount, status, onPress }: TaskCardProps) {
+  const theme = useAppTheme();
   const scale = useSharedValue(1);
   const translateY = useSharedValue(0);
   const rotate = useSharedValue(0);
@@ -61,24 +63,24 @@ export default function TaskCard({ title, responsibleName, participantCount, sta
   return (
     <Animated.View style={[animatedStyle, { marginBottom: 12 }]}>
       <Pressable 
-        style={styles.card} 
+        style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]} 
         onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
       >
         <View style={styles.header}>
-        <Text style={styles.title} numberOfLines={1}>{title}</Text>
+        <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>{title}</Text>
         <StatusBadge status={status} size="sm" />
       </View>
       
       <View style={styles.detailsRow}>
-        <Text style={styles.detailText}>
-          <Text style={styles.label}>Responsible: </Text>
+        <Text style={[styles.detailText, { color: theme.textSecondary }]}>
+          <Text style={[styles.label, { color: theme.textMuted }]}>Responsible: </Text>
           {responsibleName}
         </Text>
         {participantCount !== undefined && (
-          <Text style={styles.detailText}>
-            <Text style={styles.label}>Participants: </Text>
+          <Text style={[styles.detailText, { color: theme.textSecondary }]}>
+            <Text style={[styles.label, { color: theme.textMuted }]}>Participants: </Text>
             {participantCount}
           </Text>
         )}
@@ -90,11 +92,9 @@ export default function TaskCard({ title, responsibleName, participantCount, sta
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#18181B', // Darker gray
     borderRadius: 24, // High rounding
     padding: 20,
     borderWidth: 1,
-    borderColor: '#27272A',
   },
   header: {
     flexDirection: 'row',
@@ -106,7 +106,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     fontWeight: '800',
-    color: '#F8FAFC',
     marginRight: 12,
   },
   detailsRow: {
@@ -115,10 +114,8 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 14,
-    color: '#A1A1AA',
   },
   label: {
     fontWeight: '600',
-    color: '#52525B', // Darker label color
   },
 });
