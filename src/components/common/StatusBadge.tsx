@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { SyncStatus } from '@/types';
+import { useAppTheme } from '@/hooks/useAppTheme';
 
 interface StatusBadgeProps {
   status: SyncStatus;
@@ -8,6 +9,7 @@ interface StatusBadgeProps {
 }
 
 export default function StatusBadge({ status, size = 'md' }: StatusBadgeProps) {
+  const theme = useAppTheme();
   const getBadgeConfig = () => {
     switch (status) {
       case 'IN_SYNC':
