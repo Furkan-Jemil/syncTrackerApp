@@ -1,19 +1,20 @@
-import React, { useMemo, useEffect } from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
-import Svg, { Line, Circle, Text as SvgText, G } from 'react-native-svg';
-import { useNavigation } from '@react-navigation/native';
-import { Task, SYNC_STATUS_COLORS, ROLE_COLORS } from '@/types';
-import useSyncStore from '@/stores/syncStore';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withTiming, 
+import React, { useMemo, useEffect } from "react";
+import { View, StyleSheet, Dimensions } from "react-native";
+import Svg, { Line, Circle, Text as SvgText, G } from "react-native-svg";
+import { useNavigation } from "@react-navigation/native";
+import { Task, SYNC_STATUS_COLORS, ROLE_COLORS } from "@/types";
+import useSyncStore from "@/stores/syncStore";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
   withDelay,
   useAnimatedProps,
   withRepeat,
   Easing,
-  withSpring
-} from 'react-native-reanimated';
+  withSpring,
+} from "react-native-reanimated";
+import { useAppTheme } from "@/hooks/useAppTheme";
 
 const AnimatedG = Animated.createAnimatedComponent(G);
 const AnimatedLine = Animated.createAnimatedComponent(Line);
@@ -23,26 +24,31 @@ interface ResponsibilityTreeProps {
   task: Task;
 }
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 const NODE_RADIUS = 24;
 const VERTICAL_SPACING = 100;
 
 export default function ResponsibilityTree({ task }: ResponsibilityTreeProps) {
+  const theme = useAppTheme();
   const navigation = useNavigation<any>();
-  const getTaskStatuses = useSyncStore(s => s.getTaskStatuses);
+  const getTaskStatuses = useSyncStore((s) => s.getTaskStatuses);
   const liveStatuses = getTaskStatuses(task.id);
 
   const hierarchy = useMemo(() => {
     const participantsList = task?.participants || [];
-    const responsible = participantsList.filter(p => p.role === 'RESPONSIBLE');
-    const collaborators = participantsList.filter(p => p.role === 'CONTRIBUTOR' || p.role === 'HELPER');
-    const observers = participantsList.filter(p => p.role === 'REVIEWER' || p.role === 'OBSERVER');
+    const responsible = participantsList.filter(
+      (p) => p.role === "RESPONSIBLE",
+    );
+    const collaborators = participantsList.filter(
+      (p) => p.role === "CONTRIBUTOR" || p.role === "HELPER",
+    );
+    const observers = participantsList.filter(
+      (p) => p.role === "REVIEWER" || p.role === "OBSERVER",
+    );
 
-    return [
-      responsible,
-      collaborators,
-      observers
-    ].filter(level => level.length > 0);
+    return [responsible, collaborators, observers].filter(
+      (level) => level.length > 0,
+    );
   }, [task]);
 
   const treeData = useMemo(() => {
@@ -52,13 +58,13 @@ export default function ResponsibilityTree({ task }: ResponsibilityTreeProps) {
     let currentY = 60;
 
     nodes.push({
-      id: 'root-task',
+      id: "root-task",
       x: centerX,
       y: currentY,
-      label: 'Task Goal',
+      label: "Task Goal",
       isRoot: true,
-      color: '#A3E635',
-      level: 0
+      color: theme.primary,
+      level: 0,
     });
 
     let prevLevelNodes = [nodes[0]];
@@ -67,17 +73,19 @@ export default function ResponsibilityTree({ task }: ResponsibilityTreeProps) {
       currentY += VERTICAL_SPACING;
       const levelNodes: any[] = [];
       const totalInLevel = levelParticipants.length;
-      const spread = Math.min(width - 40, totalInLevel * 100); 
-      const startX = centerX - (spread / 2) + (spread / (totalInLevel * 2));
+      const spread = Math.min(width - 40, totalInLevel * 100);
+      const startX = centerX - spread / 2 + spread / (totalInLevel * 2);
 
       levelParticipants.forEach((p, i) => {
-        const x = startX + (i * (spread / totalInLevel));
+        const x = startX + i * (spread / totalInLevel);
         const syncStatus = liveStatuses[p.userId] || p.syncStatus;
-        const isPending = p.status === 'PENDING';
-        const color = isPending 
-          ? '#3F3F46' 
-          : (ROLE_COLORS[p.role as keyof typeof ROLE_COLORS] || SYNC_STATUS_COLORS[syncStatus as keyof typeof SYNC_STATUS_COLORS] || '#fff');
-        
+        const isPending = p.status === "PENDING";
+        const color = isPending
+          ? theme.border
+          : ROLE_COLORS[p.role as keyof typeof ROLE_COLORS] ||
+            SYNC_STATUS_COLORS[syncStatus as keyof typeof SYNC_STATUS_COLORS] ||
+            "#fff";
+
         const node = {
           id: p.id,
           participant: p,
@@ -86,15 +94,16 @@ export default function ResponsibilityTree({ task }: ResponsibilityTreeProps) {
           label: p.user?.name || `User`,
           color,
           isPending,
-          level: levelIndex + 1
+          level: levelIndex + 1,
         };
-        
+
         levelNodes.push(node);
         nodes.push(node);
 
-        const parentNode = prevLevelNodes.length === 1 
-          ? prevLevelNodes[0] 
-          : prevLevelNodes[Math.min(i, prevLevelNodes.length - 1)];
+        const parentNode =
+          prevLevelNodes.length === 1
+            ? prevLevelNodes[0]
+            : prevLevelNodes[Math.min(i, prevLevelNodes.length - 1)];
 
         links.push({
           id: `link-${parentNode.id}-${node.id}`,
@@ -103,7 +112,7 @@ export default function ResponsibilityTree({ task }: ResponsibilityTreeProps) {
           x2: node.x,
           y2: node.y - NODE_RADIUS,
           isPending: node.isPending,
-          level: levelIndex + 1
+          level: levelIndex + 1,
         });
       });
 
@@ -115,29 +124,34 @@ export default function ResponsibilityTree({ task }: ResponsibilityTreeProps) {
 
   const handleNodePress = (node: any) => {
     if (node.isRoot) return;
-    navigation.navigate('UserSidePanel', {
+    navigation.navigate("UserSidePanel", {
+      taskId: task.id,
       userId: node.participant.userId,
-      name: node.participant.user?.name || 'User',
+      name: node.participant.user?.name || "User",
       role: node.participant.role,
-      syncStatus: liveStatuses[node.participant.userId] || node.participant.syncStatus,
-      lastUpdated: node.participant.lastSyncAt || node.participant.updatedAt || new Date().toISOString(),
+      syncStatus:
+        liveStatuses[node.participant.userId] || node.participant.syncStatus,
+      lastUpdated:
+        node.participant.lastSyncAt ||
+        node.participant.updatedAt ||
+        new Date().toISOString(),
       timeLogged: node.participant.totalTimeLogged || 0,
       milestonesCompleted: 0,
     });
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Svg style={StyleSheet.absoluteFill}>
         {treeData.links.map((link, i) => (
           <TreeNodeConnector key={link.id} link={link} index={i} />
         ))}
         {treeData.nodes.map((node, i) => (
-          <TreeNode 
-            key={node.id} 
-            node={node} 
-            index={i} 
-            onPress={() => handleNodePress(node)} 
+          <TreeNode
+            key={node.id}
+            node={node}
+            index={i}
+            onPress={() => handleNodePress(node)}
           />
         ))}
       </Svg>
@@ -146,6 +160,7 @@ export default function ResponsibilityTree({ task }: ResponsibilityTreeProps) {
 }
 
 function TreeNodeConnector({ link, index }: any) {
+  const theme = useAppTheme();
   const progress = useSharedValue(0);
 
   useEffect(() => {
@@ -155,14 +170,14 @@ function TreeNodeConnector({ link, index }: any) {
   const animatedProps = useAnimatedProps(() => ({
     x2: link.x1 + (link.x2 - link.x1) * progress.value,
     y2: link.y1 + (link.y2 - link.y1) * progress.value,
-    opacity: progress.value
+    opacity: progress.value,
   }));
 
   return (
     <AnimatedLine
       x1={link.x1}
       y1={link.y1}
-      stroke={link.isPending ? '#3F3F46' : '#27272A'}
+      stroke={link.isPending ? theme.border : theme.surface}
       strokeWidth="2"
       strokeDasharray={link.isPending ? "4,4" : "0"}
       animatedProps={animatedProps}
@@ -171,6 +186,7 @@ function TreeNodeConnector({ link, index }: any) {
 }
 
 function TreeNode({ node, index, onPress }: any) {
+  const theme = useAppTheme();
   const scale = useSharedValue(0);
   const opacity = useSharedValue(0);
 
@@ -181,19 +197,17 @@ function TreeNode({ node, index, onPress }: any) {
 
   const animatedProps = useAnimatedProps(() => ({
     transform: [{ scale: scale.value }],
-    opacity: opacity.value
+    opacity: opacity.value,
   }));
 
   return (
-    <AnimatedG 
-      animatedProps={animatedProps}
-    >
+    <AnimatedG animatedProps={animatedProps}>
       <G x={node.x} y={node.y}>
         <Circle
           cx={0}
           cy={0}
           r={NODE_RADIUS}
-          fill="#18181B"
+          fill={theme.surface}
           stroke={node.color}
           strokeWidth="3"
           strokeDasharray={node.isPending ? "4,4" : "0"}
@@ -202,21 +216,19 @@ function TreeNode({ node, index, onPress }: any) {
         <SvgText
           x={0}
           y={5}
-          fill={node.isPending ? '#52525B' : '#F8FAFC'}
+          fill={node.isPending ? theme.textMuted : theme.text}
           fontSize="16"
           fontWeight="bold"
-          textAnchor="middle"
-        >
-          {node.isRoot ? 'T' : node.label.charAt(0).toUpperCase()}
+          textAnchor="middle">
+          {node.isRoot ? "T" : node.label.charAt(0).toUpperCase()}
         </SvgText>
         <SvgText
           x={0}
           y={NODE_RADIUS + 16}
-          fill="#A1A1AA"
+          fill={theme.textSecondary}
           fontSize="12"
-          textAnchor="middle"
-        >
-          {node.label.split(' ')[0]}
+          textAnchor="middle">
+          {node.label.split(" ")[0]}
         </SvgText>
       </G>
     </AnimatedG>
@@ -226,6 +238,5 @@ function TreeNode({ node, index, onPress }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#09090B',
   },
 });
