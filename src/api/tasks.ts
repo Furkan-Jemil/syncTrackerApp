@@ -14,7 +14,7 @@ export async function getTasks(): Promise<Task[]> {
   if (!userId) return [];
 
   // Fetch tasks where the current user is a participant
-  const { data } = await apiClient.get(`/tasks?select=id,participants!inner(user_id)&participants.user_id=eq.${userId}`);
+  const { data } = await apiClient.get(`/tasks?select=id,participants!inner(user_id)&participants.user_id=eq.${userId}&order=created_at.desc`);
   
   const tasksWithFilteredParticipants = Array.isArray(data) ? data : data?.data || [];
   if (tasksWithFilteredParticipants.length === 0) return [];
@@ -27,7 +27,7 @@ export async function getTasks(): Promise<Task[]> {
     milestones(id,taskId:task_id,title,order,completedAt:completed_at,completedBy:completed_by,createdAt:created_at),
     attachments(id,taskId:task_id,userId:user_id,name,url,fileType:file_type,sizeBytes:size_bytes,createdAt:created_at)`;
     
-  const { data: fullData } = await apiClient.get(`/tasks?id=in.(${taskIds})&select=${selectStr.replace(/\s/g, '')}`);
+  const { data: fullData } = await apiClient.get(`/tasks?id=in.(${taskIds})&select=${selectStr.replace(/\s/g, '')}&order=created_at.desc`);
   
   return Array.isArray(fullData) ? fullData : fullData?.data || [];
 }
@@ -158,7 +158,7 @@ export async function updateTask(taskId: string, payload: CreateTaskFormValues):
   return await getTaskById(taskId);
 }
 
-export async function submitWork(taskId: string, userId: string, notes: string, attachments?: { name: string, url: string, fileType: string, sizeBytes?: number }[]): Promise<void> {
+export async function submitWork(taskId: string, userId: string, notes: string, ownerId?: string, attachments?: { name: string, url: string, fileType: string, sizeBytes?: number }[]): Promise<void> {
   // 1. Update task status to IN_REVIEW
   await apiClient.patch(`/tasks?id=eq.${taskId}`, { status: 'IN_REVIEW' });
 
@@ -186,6 +186,23 @@ export async function submitWork(taskId: string, userId: string, notes: string, 
       })
     );
     await Promise.all(attachmentPromises);
+  }
+  
+  // 4. Notify the owner
+  if (ownerId && ownerId !== userId) {
+    try {
+      const state = useAuthStore.getState();
+      await apiClient.post('/notifications', {
+        user_id: ownerId,
+        task_id: taskId,
+        sender_id: userId,
+        type: 'WORK_SUBMITTED',
+        message: `${state.user?.name || 'A contributor'} submitted work for review.`,
+        is_read: false
+      });
+    } catch (notifErr) {
+      console.warn("Work submitted, but notification failed:", notifErr);
+    }
   }
 }
 
