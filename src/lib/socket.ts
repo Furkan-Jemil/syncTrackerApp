@@ -15,7 +15,13 @@ export async function connectSocket(): Promise<Socket> {
   // Supabase URLs don't support Socket.IO (they use Supabase Realtime/Websockets)
   if (SOCKET_URL.includes('supabase.co')) {
     console.warn('[Socket] Disabling Socket.IO connection as Supabase does not support it natively.');
-    return {} as any; 
+    return {
+      on: () => {},
+      off: () => {},
+      emit: () => {},
+      disconnect: () => {},
+      connected: false,
+    } as any; 
   }
 
   socket = io(SOCKET_URL, {
