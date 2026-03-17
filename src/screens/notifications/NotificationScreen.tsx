@@ -17,11 +17,13 @@ import Header from '@/components/common/Header';
 import { Notification } from '@/types';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { useAppTheme } from '@/hooks/useAppTheme';
 
 dayjs.extend(relativeTime);
 
 export default function NotificationScreen() {
   const navigation = useNavigation<any>();
+  const theme = useAppTheme();
   const { 
     notifications, 
     isLoading, 
@@ -29,7 +31,7 @@ export default function NotificationScreen() {
     markAsRead, 
     acceptInvite, 
     declineInvite,
-    processingIds 
+    processingActions 
   } = useNotificationStore();
 
   useEffect(() => {
@@ -40,8 +42,6 @@ export default function NotificationScreen() {
     if (!notification.isRead) {
       markAsRead(notification.id);
     }
-    
-    // Navigate to task detail if available
     if (notification.taskId) {
       navigation.navigate('TasksStack', { 
         screen: 'TaskDetail', 
@@ -50,72 +50,117 @@ export default function NotificationScreen() {
     }
   };
 
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'TASK_ASSIGNED': return theme.primary;
+      case 'HELPER_REQUESTED': return '#3B82F6';
+      case 'WORK_SUBMITTED': return '#F97316';
+      case 'TASK_COMPLETED': return '#22C55E';
+      case 'TASK_REJECTED': return theme.error;
+      default: return theme.textMuted;
+    }
+  };
+
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case 'TASK_ASSIGNED': return 'Assigned';
+      case 'HELPER_REQUESTED': return 'Help Requested';
+      case 'WORK_SUBMITTED': return 'Work Submitted';
+      case 'TASK_COMPLETED': return 'Completed';
+      case 'TASK_REJECTED': return 'Rejected';
+      default: return type.replace(/_/g, ' ');
+    }
+  };
+
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'RESPONSIBLE': return theme.primary;
+      case 'CONTRIBUTOR': return '#3B82F6';
+      case 'HELPER': return '#F97316';
+      case 'REVIEWER': return '#A855F7';
+      case 'OBSERVER': return theme.textMuted;
+      default: return theme.textMuted;
+    }
+  };
+
   const renderNotificationItem = ({ item }: { item: Notification }) => {
     const isInvite = item.type === 'TASK_ASSIGNED' || item.type === 'HELPER_REQUESTED';
-    const isProcessing = processingIds.has(item.id);
-    
+    const currentAction = processingActions[item.id];
     const role = item.metadata?.role as string | undefined;
+    const typeColor = getTypeColor(item.type);
 
     return (
-      <TouchableOpacity
-        style={[styles.notificationCard, !item.isRead && styles.unreadCard]}
-        onPress={() => handleNotificationPress(item)}
-        activeOpacity={0.7}
+      <View
+        style={[
+          styles.notificationCard, 
+          { backgroundColor: theme.surface, borderColor: theme.border },
+          !item.isRead && { borderColor: typeColor + '60', backgroundColor: typeColor + '0A' }
+        ]}
       >
-        <View style={styles.cardHeader}>
-          <View style={[styles.typeBadge, { backgroundColor: getTypeColor(item.type) + '20' }]}>
-            <Text style={[styles.typeText, { color: getTypeColor(item.type) }]}>
-              {item.type.replace('_', ' ')}
+        <TouchableOpacity
+          onPress={() => handleNotificationPress(item)}
+          activeOpacity={0.7}
+          style={styles.cardContent}
+        >
+          <View style={styles.cardHeader}>
+            <View style={[styles.typeBadge, { backgroundColor: typeColor + '20' }]}>
+              <Text style={[styles.typeText, { color: typeColor }]}>
+                {getTypeLabel(item.type)}
+              </Text>
+            </View>
+            <Text style={[styles.timeText, { color: theme.textMuted }]}>
+              {dayjs(item.createdAt).fromNow()}
             </Text>
           </View>
-          <Text style={styles.timeText}>{dayjs(item.createdAt).fromNow()}</Text>
-        </View>
- 
-        <Text style={styles.messageText}>{item.message}</Text>
 
-        {role && (
-          <View style={styles.roleContainer}>
-            <Text style={styles.roleLabel}>Assigned as:</Text>
-            <Text style={[styles.roleValue, { color: getRoleColor(role) }]}>
-              {role.replace('_', ' ')}
-            </Text>
-          </View>
-        )}
+          <Text style={[styles.messageText, { color: theme.text }]}>{item.message}</Text>
+
+          {role && (
+            <View style={styles.roleContainer}>
+              <Text style={[styles.roleLabel, { color: theme.textMuted }]}>Assigned as:</Text>
+              <Text style={[styles.roleValue, { color: getRoleColor(role) }]}>
+                {role.replace(/_/g, ' ')}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
 
         {isInvite && !item.isRead && (
           <View style={styles.actionRow}>
             <TouchableOpacity 
-              style={[styles.actionBtn, styles.declineBtn]} 
+              style={[styles.actionBtn, { backgroundColor: theme.error + '15', borderWidth: 1, borderColor: theme.error + '50' }]} 
               onPress={() => declineInvite(item)}
-              disabled={isProcessing}
+              disabled={!!currentAction}
             >
-              {isProcessing ? (
-                <ActivityIndicator size="small" color="#EF4444" />
+              {currentAction === 'DECLINE' ? (
+                <ActivityIndicator size="small" color={theme.error} />
               ) : (
-                <Text style={styles.declineBtnText}>Decline</Text>
+                <Text style={[styles.declineBtnText, { color: theme.error }]}>Decline</Text>
               )}
             </TouchableOpacity>
             <TouchableOpacity 
-              style={[styles.actionBtn, styles.acceptBtn]} 
+              style={[styles.actionBtn, { backgroundColor: theme.primary }]} 
               onPress={() => acceptInvite(item)}
-              disabled={isProcessing}
+              disabled={!!currentAction}
             >
-              {isProcessing ? (
-                <ActivityIndicator size="small" color="#052E16" />
+              {currentAction === 'ACCEPT' ? (
+                <ActivityIndicator size="small" color={theme.background === '#09090B' ? '#052E16' : '#fff'} />
               ) : (
-                <Text style={styles.acceptBtnText}>Accept</Text>
+                <Text style={[styles.acceptBtnText, { color: theme.background === '#09090B' ? '#052E16' : '#ffffff' }]}>Accept</Text>
               )}
             </TouchableOpacity>
           </View>
         )}
         
-        {!item.isRead && <View style={styles.unreadIndicator} />}
-      </TouchableOpacity>
+        {!item.isRead && (
+          <View style={[styles.unreadIndicator, { backgroundColor: typeColor }]} />
+        )}
+      </View>
     );
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
       <Header title="Mission Briefs" showBack />
       <FlatList
         data={notifications}
@@ -126,74 +171,55 @@ export default function NotificationScreen() {
           <RefreshControl
             refreshing={isLoading}
             onRefresh={fetchNotifications}
-            tintColor="#A3E635"
+            tintColor={theme.primary}
+            colors={[theme.primary]}
           />
         }
         ListEmptyComponent={
           !isLoading ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyIcon}>📭</Text>
-              <Text style={styles.emptyTitle}>All Clear</Text>
-              <Text style={styles.emptySub}>No pending notifications or assignments.</Text>
+              <Text style={[styles.emptyTitle, { color: theme.text }]}>All Clear</Text>
+              <Text style={[styles.emptySub, { color: theme.textMuted }]}>
+                No pending notifications or mission briefings.
+              </Text>
             </View>
-          ) : null
+          ) : (
+            <View style={[styles.emptyContainer]}>
+              <ActivityIndicator color={theme.primary} />
+            </View>
+          )
         }
       />
     </SafeAreaView>
   );
 }
 
-const getTypeColor = (type: string) => {
-  switch (type) {
-    case 'TASK_ASSIGNED': return '#A3E635';
-    case 'HELPER_REQUESTED': return '#3B82F6';
-    case 'TASK_COMPLETED': return '#22C55E';
-    case 'TASK_REJECTED': return '#EF4444';
-    default: return '#A1A1AA';
-  }
-};
-
-const getRoleColor = (role: string) => {
-  switch (role) {
-    case 'ASSIGNER':
-    case 'RESPONSIBLE': return '#A3E635';
-    case 'CONTRIBUTOR': return '#3B82F6';
-    case 'HELPER': return '#F97316';
-    case 'REVIEWER': return '#A855F7';
-    case 'OBSERVER': return '#A1A1AA';
-    default: return '#A1A1AA';
-  }
-};
-
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#09090B',
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   listContainer: {
     padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 100,
   },
   notificationCard: {
-    backgroundColor: '#18181B',
     borderRadius: 20,
     padding: 20,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#27272A',
     position: 'relative',
     overflow: 'hidden',
-  },
-  unreadCard: {
-    borderColor: '#A3E63540',
-    backgroundColor: '#18181B',
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
+  },
+  cardContent: {
+    padding: 0,
   },
   typeBadge: {
     paddingHorizontal: 10,
@@ -204,16 +230,15 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_700Bold',
     fontSize: 10,
     letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   timeText: {
     fontFamily: 'Inter_400Regular',
     fontSize: 12,
-    color: '#71717A',
   },
   messageText: {
     fontFamily: 'Inter_500Medium',
     fontSize: 15,
-    color: '#F8FAFC',
     lineHeight: 22,
   },
   roleContainer: {
@@ -225,11 +250,11 @@ const styles = StyleSheet.create({
   roleLabel: {
     fontFamily: 'Inter_400Regular',
     fontSize: 13,
-    color: '#71717A',
   },
   roleValue: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 13,
+    textTransform: 'capitalize',
   },
   actionRow: {
     flexDirection: 'row',
@@ -243,23 +268,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  acceptBtn: {
-    backgroundColor: '#A3E635',
-  },
   acceptBtnText: {
     fontFamily: 'Inter_700Bold',
     fontSize: 14,
-    color: '#052E16',
-  },
-  declineBtn: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderWidth: 1,
-    borderColor: '#EF444450',
   },
   declineBtnText: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 14,
-    color: '#EF4444',
   },
   unreadIndicator: {
     position: 'absolute',
@@ -267,7 +282,6 @@ const styles = StyleSheet.create({
     right: 0,
     width: 6,
     height: 6,
-    backgroundColor: '#A3E635',
     borderBottomLeftRadius: 6,
   },
   emptyContainer: {
@@ -283,13 +297,11 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontFamily: 'SpaceGrotesk_700Bold',
     fontSize: 20,
-    color: '#F8FAFC',
     marginBottom: 8,
   },
   emptySub: {
     fontFamily: 'Inter_400Regular',
     fontSize: 14,
-    color: '#71717A',
     textAlign: 'center',
     paddingHorizontal: 40,
   },
