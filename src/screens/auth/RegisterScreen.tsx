@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   TextInput,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -20,12 +21,17 @@ import PrimaryButton from '@/components/common/PrimaryButton';
 import { registerSchema, RegisterFormValues } from '@/utils/schemas';
 import useAuthStore from '@/stores/authStore';
 import { AuthStackParamList } from '@/navigation/AuthNavigator';
+import { useAppTheme } from '@/hooks/useAppTheme';
 
 type RegisterNavProp = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
 
 export default function RegisterScreen() {
   const navigation = useNavigation<RegisterNavProp>();
+  const theme = useAppTheme();
   const register = useAuthStore((s) => s.register);
+  const loginWithGoogle = useAuthStore((s) => s.loginWithGoogle);
+  const [isGoogleLoading, setIsGoogleLoading] = React.useState(false);
+
 
   const emailRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
@@ -55,9 +61,21 @@ export default function RegisterScreen() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true);
+    try {
+      await loginWithGoogle();
+    } catch (err: any) {
+      const msg = err?.message || 'Google sign-in failed';
+      setError('email', { message: msg });
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
+
   return (
     <KeyboardAvoidingView
-      style={styles.flex}
+      style={[styles.flex, { backgroundColor: theme.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
@@ -66,7 +84,7 @@ export default function RegisterScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Glowing background effect */}
-        <View style={styles.glowOrb} />
+        <View style={[styles.glowOrb, { backgroundColor: theme.primary }]} />
         {/* Header */}
         <Animated.View entering={FadeInUp.duration(600)} style={styles.header}>
           <Image 
@@ -74,8 +92,8 @@ export default function RegisterScreen() {
             style={styles.logo} 
             resizeMode="contain"
           />
-          <Text style={styles.title}>Create account</Text>
-          <Text style={styles.subtitle}>Join SyncTracker and own your work</Text>
+          <Text style={[styles.title, { color: theme.text }]}>Create account</Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Join SyncTracker and own your work</Text>
         </Animated.View>
 
         {/* Form */}
@@ -175,18 +193,34 @@ export default function RegisterScreen() {
           />
 
           <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
-            <View style={styles.dividerLine} />
+            <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
+            <Text style={[styles.dividerText, { color: theme.textMuted }]}>or</Text>
+            <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
           </View>
+
+          <TouchableOpacity
+            style={[styles.googleBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}
+            onPress={handleGoogleSignIn}
+            disabled={isGoogleLoading}
+            activeOpacity={0.8}
+          >
+            {isGoogleLoading ? (
+              <ActivityIndicator size="small" color={theme.text} />
+            ) : (
+              <>
+                <Text style={styles.googleIcon}>G</Text>
+                <Text style={[styles.googleBtnText, { color: theme.text }]}>Continue with Google</Text>
+              </>
+            )}
+          </TouchableOpacity>
 
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={styles.linkRow}
           >
-            <Text style={styles.linkText}>
+            <Text style={[styles.linkText, { color: theme.textSecondary }]}>
               Already have an account?{' '}
-              <Text style={styles.linkHighlight}>Sign in</Text>
+              <Text style={[styles.linkHighlight, { color: theme.primary }]}>Sign in</Text>
             </Text>
           </TouchableOpacity>
         </Animated.View>
@@ -259,4 +293,23 @@ const styles = StyleSheet.create({
   linkRow: { alignItems: 'center' },
   linkText: { fontFamily: 'Inter_400Regular', fontSize: 14, color: '#A1A1AA' },
   linkHighlight: { fontFamily: 'Inter_600SemiBold', color: '#A3E635' },
+  googleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 52,
+    borderRadius: 9999,
+    borderWidth: 1,
+    marginBottom: 20,
+    gap: 10,
+  },
+  googleIcon: {
+    fontFamily: 'SpaceGrotesk_700Bold',
+    fontSize: 20,
+    color: '#4285F4',
+  },
+  googleBtnText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 15,
+  },
 });
