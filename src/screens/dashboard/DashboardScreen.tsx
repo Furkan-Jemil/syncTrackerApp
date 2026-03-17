@@ -6,8 +6,10 @@ import useNotificationStore from '@/stores/notificationStore';
 import { Task } from '@/types';
 import { useNavigation } from '@react-navigation/native';
 import { Image } from 'react-native';
+import { useAppTheme } from '@/hooks/useAppTheme';
 
 export default function DashboardScreen() {
+  const theme = useAppTheme();
   const { user } = useAuthStore();
   const { tasks } = useTaskStore();
   const { unreadCount } = useNotificationStore();
@@ -51,90 +53,102 @@ export default function DashboardScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.glowOrb} />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+      <View style={[styles.glowOrb, { backgroundColor: theme.primary }]} />
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         
         {/* Top Header Row */}
         <View style={styles.headerRow}>
           <View style={styles.headerLeft}>
           <TouchableOpacity 
-            style={styles.avatarPlaceholder} 
+            style={[styles.avatarPlaceholder, { backgroundColor: theme.primary, borderColor: theme.primary + '40' }]} 
             onPress={() => navigation.navigate('ProfileStack')}
           >
             {user?.avatar_url ? (
               <Image source={{ uri: user.avatar_url }} style={styles.avatarImage} />
             ) : (
-              <Text style={styles.avatarEmoji}>{user?.name?.charAt(0).toUpperCase() || '👤'}</Text>
+              <Text style={[styles.avatarEmoji, { color: theme.background === '#09090B' ? '#052E16' : '#FFFFFF' }]}>{user?.name?.charAt(0).toUpperCase() || '👤'}</Text>
             )}
           </TouchableOpacity>
             <View>
-              <Text style={styles.greeting}>Hello {firstName} 👋</Text>
-              <Text style={styles.subtitle}>Get ready</Text>
+              <Text style={[styles.greeting, { color: theme.text }]}>Hello {firstName} 👋</Text>
+              <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Get ready</Text>
             </View>
           </View>
           <View style={styles.headerRight}>
              <TouchableOpacity 
-               style={styles.iconButton} 
+               style={[styles.iconButton, { backgroundColor: theme.surface }]} 
                onPress={() => navigation.navigate('Notifications')}
              >
                <Text style={styles.iconText}>🔔</Text>
-               {unreadCount > 0 && <View style={styles.unreadBadge} />}
+               {unreadCount > 0 && <View style={[styles.unreadBadge, { backgroundColor: theme.primary, borderColor: theme.surface }]} />}
              </TouchableOpacity>
-             <TouchableOpacity style={styles.iconButton}>
+             <TouchableOpacity style={[styles.iconButton, { backgroundColor: theme.surface }]}>
                <Text style={styles.iconText}>🔥</Text>
              </TouchableOpacity>
           </View>
         </View>
 
         {/* Hero Card */}
-        <View style={styles.heroCard}>
+        <View style={[styles.heroCard, { backgroundColor: theme.primary, shadowColor: theme.primary }]}>
            <View style={styles.heroContent}>
-              <View style={styles.heroIconBg}><Text style={styles.heroIconText}>🏆</Text></View>
+              <View style={[styles.heroIconBg, { backgroundColor: theme.background === '#09090B' ? '#052E16' : 'rgba(0,0,0,0.1)' }]}><Text style={styles.heroIconText}>🏆</Text></View>
               <View>
-                 <Text style={styles.heroTitle}>Mission Status</Text>
-                 <Text style={styles.heroSub}>{activeCount} Active Tasks</Text>
+                 <Text style={[styles.heroTitle, { color: theme.background === '#09090B' ? '#052E16' : '#FFFFFF' }]}>Mission Status</Text>
+                 <Text style={[styles.heroSub, { color: theme.background === '#09090B' ? '#14532D' : 'rgba(255,255,255,0.8)' }]}>{activeCount} Active Tasks</Text>
               </View>
            </View>
            <TouchableOpacity style={styles.heroBtn} onPress={() => navigation.navigate('TasksStack')}>
-             <Text style={styles.heroBtnText}>START</Text>
+             <Text style={[styles.heroBtnText, { color: theme.background === '#09090B' ? '#052E16' : theme.primary }]}>START</Text>
            </TouchableOpacity>
         </View>
 
         {/* Stats Grid */}
-        <Text style={styles.sectionTitle}>Execution Stats</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>Execution Stats</Text>
         <View style={styles.nutritionGrid}>
            <TouchableOpacity 
-             style={[styles.nutritionCard, filterCategory === 'ACTIVE' && styles.nutritionCardActive]}
+             style={[
+               styles.nutritionCard, 
+               { backgroundColor: theme.surface },
+               filterCategory === 'ACTIVE' && [styles.nutritionCardActive, { borderColor: theme.primary + '40', backgroundColor: theme.primaryMuted }]
+             ]}
              onPress={() => toggleFilter('ACTIVE')}
            >
               <Text style={styles.nutIcon}>⚡</Text>
-              <Text style={styles.nutLabel}>Active</Text>
+              <Text style={[styles.nutLabel, { color: theme.textSecondary }]}>Active</Text>
               <View style={styles.nutValRow}>
-                <Text style={styles.nutValue}>{activeCount}</Text>
-                <Text style={styles.nutSub}> tasks</Text>
+                <Text style={[styles.nutValue, { color: theme.text }]}>{activeCount}</Text>
+                <Text style={[styles.nutSub, { color: theme.textSecondary }]}> tasks</Text>
               </View>
            </TouchableOpacity>
            <TouchableOpacity 
-             style={[styles.nutritionCard, filterCategory === 'NEEDS_UPDATE' && styles.nutritionCardNeedsUpdate]}
+             style={[
+               styles.nutritionCard, 
+               { backgroundColor: theme.surface },
+               filterCategory === 'NEEDS_UPDATE' && [styles.nutritionCardNeedsUpdate, { borderColor: theme.warning + '40', backgroundColor: theme.warning + '0D' }]
+             ]}
              onPress={() => toggleFilter('NEEDS_UPDATE')}
            >
               <Text style={styles.nutIcon}>⚠️</Text>
-              <Text style={styles.nutLabel}>Needs Update</Text>
+              <Text style={[styles.nutLabel, { color: theme.textSecondary }]}>Needs Update</Text>
               <View style={styles.nutValRow}>
-                <Text style={styles.nutValue}>{needsUpdateCount}</Text>
-                <Text style={styles.nutSub}> alerts</Text>
+                <Text style={[styles.nutValue, { color: theme.text }]}>{needsUpdateCount}</Text>
+                <Text style={[styles.nutSub, { color: theme.textSecondary }]}> alerts</Text>
               </View>
            </TouchableOpacity>
            <TouchableOpacity 
-             style={[styles.nutritionCard, filterCategory === 'BLOCKED' && styles.nutritionCardBlocked]}
+             style={[
+               styles.nutritionCard, 
+               { backgroundColor: theme.surface },
+               filterCategory === 'BLOCKED' && [styles.nutritionCardBlocked, { borderColor: theme.error + '40', backgroundColor: theme.error + '0D' }]
+             ]}
              onPress={() => toggleFilter('BLOCKED')}
            >
               <Text style={styles.nutIcon}>🛑</Text>
-              <Text style={styles.nutLabel}>Blocked</Text>
+              <Text style={[styles.nutLabel, { color: theme.textSecondary }]}>Blocked</Text>
               <View style={styles.nutValRow}>
-                <Text style={styles.nutValue}>{blockedCount}</Text>
-                <Text style={styles.nutSub}> blocks</Text>
+                <Text style={[styles.nutValue, { color: theme.text }]}>{blockedCount}</Text>
+                <Text style={[styles.nutSub, { color: theme.textSecondary }]}> blocks</Text>
               </View>
            </TouchableOpacity>
         </View>
@@ -143,12 +157,12 @@ export default function DashboardScreen() {
         {filterCategory && (
           <View style={styles.dynamicListContainer}>
             <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitleNoMargin}>
+              <Text style={[styles.sectionTitleNoMargin, { color: theme.text }]}>
                 {filterCategory === 'ACTIVE' ? 'Active Tasks' :
                  filterCategory === 'NEEDS_UPDATE' ? 'Needs Update' : 'Blocked Tasks'}
               </Text>
               <TouchableOpacity onPress={() => setFilterCategory(null)}>
-                <Text style={styles.sectionLink}>Close</Text>
+                <Text style={[styles.sectionLink, { color: theme.primary }]}>Close</Text>
               </TouchableOpacity>
             </View>
 
@@ -156,12 +170,12 @@ export default function DashboardScreen() {
               const participantCount = task.participants?.length || 0;
               const p = task.participants?.find((part: any) => part.userId === user?.id) || task.participants?.[0];
               const displayStatus = p ? p.syncStatus : 'IN_SYNC';
-              const statusColor = displayStatus === 'BLOCKED' ? '#EF4444' : displayStatus === 'NEEDS_UPDATE' ? '#FACC15' : '#A3E635';
+              const statusColor = displayStatus === 'BLOCKED' ? theme.error : displayStatus === 'NEEDS_UPDATE' ? theme.warning : theme.primary;
 
               return (
                 <TouchableOpacity 
                   key={task.id} 
-                  style={styles.activityItem}
+                  style={[styles.activityItem, { backgroundColor: theme.surface }]}
                   onPress={() => navigation.navigate('TasksStack', { screen: 'TaskDetail', params: { taskId: task.id } })}
                 >
                   <View style={[styles.activityRing, { borderColor: statusColor, backgroundColor: statusColor + '20' }]}>
@@ -170,24 +184,24 @@ export default function DashboardScreen() {
                     </Text>
                   </View>
                   <View style={styles.activityContent}>
-                    <Text style={styles.activityTitle} numberOfLines={1}>{task.title}</Text>
-                    <Text style={styles.activityDesc}>
+                    <Text style={[styles.activityTitle, { color: theme.text }]} numberOfLines={1}>{task.title}</Text>
+                    <Text style={[styles.activityDesc, { color: theme.textSecondary }]}>
                       {displayStatus.replace('_', ' ')} • {task.responsibleOwnerId === user?.id ? "You" : "Team"}
                     </Text>
                   </View>
                   <View style={styles.activityRight}>
-                    <Text style={styles.activityCount}>{participantCount}</Text>
-                    <Text style={styles.activitySubCount}>/parts</Text>
+                    <Text style={[styles.activityCount, { color: theme.text }]}>{participantCount}</Text>
+                    <Text style={[styles.activitySubCount, { color: theme.textSecondary }]}>/parts</Text>
                   </View>
                 </TouchableOpacity>
               );
             })}
 
             {currentFilteredTasks.length === 0 && (
-              <Text style={styles.emptyText}>No tasks found in this category.</Text>
+              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No tasks found in this category.</Text>
             )}
             
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: theme.border }]} />
           </View>
         )}
 
@@ -195,38 +209,38 @@ export default function DashboardScreen() {
 
         {/* Recent Tasks */}
         <View style={[styles.sectionHeaderRow, { marginTop: 24 }]}>
-          <Text style={styles.sectionTitleNoMargin}>Recent Tasks</Text>
+          <Text style={[styles.sectionTitleNoMargin, { color: theme.text }]}>Recent Tasks</Text>
         </View>
         
         {recentTasks.slice(0, 4).map((task: Task) => {
           const participantCount = task.participants?.length || 0;
           const p = task.participants?.find((part: any) => part.userId === user?.id) || task.participants?.[0];
           const displayStatus = p ? p.syncStatus : 'IN_SYNC';
-          const statusColor = displayStatus === 'BLOCKED' ? '#EF4444' : displayStatus === 'NEEDS_UPDATE' ? '#FACC15' : '#A3E635';
+          const statusColor = displayStatus === 'BLOCKED' ? theme.error : displayStatus === 'NEEDS_UPDATE' ? theme.warning : theme.primary;
 
           return (
             <TouchableOpacity 
               key={task.id} 
-              style={styles.activityItem}
+              style={[styles.activityItem, { backgroundColor: theme.surface }]}
               onPress={() => navigation.navigate('TasksStack', { screen: 'TaskDetail', params: { taskId: task.id } })}
             >
               <View style={[styles.activityRing, { borderColor: statusColor, backgroundColor: statusColor + '20' }]}>
                  <Text style={styles.activityIcon}>✓</Text>
               </View>
               <View style={styles.activityContent}>
-                <Text style={styles.activityTitle} numberOfLines={1}>{task.title}</Text>
-                <Text style={styles.activityDesc}>Updated • {task.responsibleOwnerId === user?.id ? "You" : "Team"}</Text>
+                <Text style={[styles.activityTitle, { color: theme.text }]} numberOfLines={1}>{task.title}</Text>
+                <Text style={[styles.activityDesc, { color: theme.textSecondary }]}>Updated • {task.responsibleOwnerId === user?.id ? "You" : "Team"}</Text>
               </View>
               <View style={styles.activityRight}>
-                <Text style={styles.activityCount}>{participantCount}</Text>
-                <Text style={styles.activitySubCount}>/parts</Text>
+                <Text style={[styles.activityCount, { color: theme.text }]}>{participantCount}</Text>
+                <Text style={[styles.activitySubCount, { color: theme.textSecondary }]}>/parts</Text>
               </View>
             </TouchableOpacity>
           );
         })}
 
         {recentTasks.length === 0 && (
-          <Text style={styles.emptyText}>No recent tasks.</Text>
+          <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No recent tasks.</Text>
         )}
 
         <View style={styles.bottomSpacer} />
@@ -238,7 +252,6 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#09090B',
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   glowOrb: {
@@ -248,7 +261,6 @@ const styles = StyleSheet.create({
     width: 300,
     height: 300,
     borderRadius: 150,
-    backgroundColor: '#A3E635',
     opacity: 0.1,
     transform: [{ scale: 1.5 }],
   },
@@ -290,7 +302,6 @@ const styles = StyleSheet.create({
   greeting: {
     fontFamily: 'SpaceGrotesk_700Bold',
     fontSize: 18,
-    color: '#F7FEE7',
     letterSpacing: -0.2,
   },
   subtitle: {
@@ -307,7 +318,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#18181B',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -321,19 +331,15 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#A3E635',
     borderWidth: 2,
-    borderColor: '#18181B',
   },
   heroCard: {
     flexDirection: 'row',
-    backgroundColor: '#A3E635', // Solid lime green
     borderRadius: 9999, // Pill shape
     padding: 10,
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 32,
-    shadowColor: '#A3E635',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.4,
     shadowRadius: 16,
@@ -378,7 +384,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: 'SpaceGrotesk_600SemiBold',
     fontSize: 20,
-    color: '#F7FEE7',
     marginBottom: 16,
     letterSpacing: -0.3,
   },
@@ -391,7 +396,6 @@ const styles = StyleSheet.create({
   sectionTitleNoMargin: {
     fontFamily: 'SpaceGrotesk_600SemiBold',
     fontSize: 20,
-    color: '#F7FEE7',
     letterSpacing: -0.3,
   },
   sectionLink: {
@@ -406,7 +410,6 @@ const styles = StyleSheet.create({
   },
   nutritionCard: {
     width: '31%',
-    backgroundColor: '#18181B',
     borderRadius: 24,
     padding: 16,
     alignItems: 'flex-start',
@@ -462,7 +465,6 @@ const styles = StyleSheet.create({
   activityItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#18181B',
     padding: 16,
     borderRadius: 28, // High rounding
     marginBottom: 12,
