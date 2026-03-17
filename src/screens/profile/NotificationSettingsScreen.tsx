@@ -2,58 +2,60 @@ import React from 'react';
 import { View, Text, StyleSheet, Switch, ScrollView, SafeAreaView, Platform, StatusBar } from 'react-native';
 import Header from '@/components/common/Header';
 import useSettingsStore from '@/stores/settingsStore';
+import { useAppTheme } from '@/hooks/useAppTheme';
 
 export default function NotificationSettingsScreen() {
+  const theme = useAppTheme();
   const { notifications, updateNotifications } = useSettingsStore();
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
       <Header title="Notification Preferences" showBack />
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>MISSION ALERTS</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>MISSION ALERTS</Text>
+          <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <View style={styles.row}>
               <View style={styles.info}>
-                <Text style={styles.label}>Push Notifications</Text>
-                <Text style={styles.description}>Receive instant alerts on your device</Text>
+                <Text style={[styles.label, { color: theme.text }]}>Push Notifications</Text>
+                <Text style={[styles.description, { color: theme.textSecondary }]}>Receive instant alerts on your device</Text>
               </View>
               <Switch 
                 value={notifications.push} 
                 onValueChange={(v) => updateNotifications({ push: v })}
-                trackColor={{ true: '#A3E635', false: '#27272A' }}
-                thumbColor={notifications.push ? '#F8FAFC' : '#71717A'}
+                trackColor={{ true: theme.primary, false: theme.border }}
+                thumbColor={notifications.push ? '#F8FAFC' : theme.textMuted}
               />
             </View>
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: theme.border }]} />
             <View style={styles.row}>
               <View style={styles.info}>
-                <Text style={styles.label}>Direct Assignments</Text>
-                <Text style={styles.description}>When you are assigned as Responsible</Text>
+                <Text style={[styles.label, { color: theme.text }]}>Direct Assignments</Text>
+                <Text style={[styles.description, { color: theme.textSecondary }]}>When you are assigned as Responsible</Text>
               </View>
               <Switch 
                 value={notifications.assignments} 
                 onValueChange={(v) => updateNotifications({ assignments: v })}
-                trackColor={{ true: '#A3E635', false: '#27272A' }}
-                thumbColor={notifications.assignments ? '#F8FAFC' : '#71717A'}
+                trackColor={{ true: theme.primary, false: theme.border }}
+                thumbColor={notifications.assignments ? '#F8FAFC' : theme.textMuted}
               />
             </View>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>DIGESTS</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>DIGESTS</Text>
+          <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <View style={styles.row}>
               <View style={styles.info}>
-                <Text style={styles.label}>Email Updates</Text>
-                <Text style={styles.description}>Daily summary of team activity</Text>
+                <Text style={[styles.label, { color: theme.text }]}>Email Updates</Text>
+                <Text style={[styles.description, { color: theme.textSecondary }]}>Daily summary of team activity</Text>
               </View>
               <Switch 
                 value={notifications.email} 
                 onValueChange={(v) => updateNotifications({ email: v })}
-                trackColor={{ true: '#A3E635', false: '#27272A' }}
-                thumbColor={notifications.email ? '#F8FAFC' : '#71717A'}
+                trackColor={{ true: theme.primary, false: theme.border }}
+                thumbColor={notifications.email ? '#F8FAFC' : theme.textMuted}
               />
             </View>
           </View>
@@ -66,7 +68,6 @@ export default function NotificationSettingsScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#09090B',
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   container: {
@@ -83,10 +84,8 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   card: {
-    backgroundColor: '#18181B',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#27272A',
     overflow: 'hidden',
   },
   row: {
@@ -102,17 +101,14 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 16,
-    color: '#F8FAFC',
     marginBottom: 4,
   },
   description: {
     fontFamily: 'Inter_400Regular',
     fontSize: 13,
-    color: '#71717A',
   },
   divider: {
     height: 1,
-    backgroundColor: '#27272A',
     marginHorizontal: 20,
   },
 });
