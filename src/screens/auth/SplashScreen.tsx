@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Image } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -9,8 +9,10 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import useAuthStore from '@/stores/authStore';
+import { useAppTheme } from '@/hooks/useAppTheme';
 
 export default function SplashScreen() {
+  const theme = useAppTheme();
   const restoreSession = useAuthStore((s) => s.restoreSession);
   const scale = useSharedValue(1);
 
@@ -32,12 +34,16 @@ export default function SplashScreen() {
   }, [restoreSession, scale]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Animated.View style={animatedStyle}>
-        <Text style={styles.emoji}>🔗</Text>
+        <Image 
+          source={require('../../../assets/app-logo.png')} 
+          style={styles.logo}
+          resizeMode="contain"
+        />
       </Animated.View>
-      <Text style={styles.title}>SyncTracker</Text>
-      <Text style={styles.subtitle}>Responsibility & Sync Intelligence</Text>
+      <Text style={[styles.title, { color: theme.text }]}>SyncTracker</Text>
+      <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Responsibility & Sync Intelligence</Text>
     </View>
   );
 }
@@ -50,8 +56,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#0f1117',
     gap: 8,
   },
-  emoji: {
-    fontSize: 72,
+  logo: {
+    width: 120,
+    height: 120,
+    marginBottom: 20,
   },
   title: {
     fontSize: 32,
