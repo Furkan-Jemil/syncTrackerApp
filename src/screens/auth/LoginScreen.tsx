@@ -8,6 +8,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -20,17 +21,22 @@ import PrimaryButton from '@/components/common/PrimaryButton';
 import { loginSchema, LoginFormValues } from '@/utils/schemas';
 import useAuthStore from '@/stores/authStore';
 import { AuthStackParamList } from '@/navigation/AuthNavigator';
+import { useAppTheme } from '@/hooks/useAppTheme';
 
 type LoginNavProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
 export default function LoginScreen() {
   const navigation = useNavigation<LoginNavProp>();
+  const theme = useAppTheme();
   const login = useAuthStore((s) => s.login);
+  const loginWithGoogle = useAuthStore((s) => s.loginWithGoogle);
   const resendConfirmation = useAuthStore((s) => s.resendConfirmation);
   const passwordRef = useRef<TextInput>(null);
   const [isResending, setIsResending] = React.useState(false);
   const [resendSuccess, setResendSuccess] = React.useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = React.useState(false);
   const [unconfirmedEmail, setUnconfirmedEmail] = React.useState<string | null>(null);
+
 
   const {
     control,
@@ -75,9 +81,21 @@ export default function LoginScreen() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true);
+    try {
+      await loginWithGoogle();
+    } catch (err: any) {
+      const msg = err?.message || 'Google sign-in failed';
+      setError('email', { message: msg });
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
+
   return (
     <KeyboardAvoidingView
-      style={styles.flex}
+      style={[styles.flex, { backgroundColor: theme.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
@@ -86,7 +104,7 @@ export default function LoginScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Glowing background effect */}
-        <View style={styles.glowOrb} />
+        <View style={[styles.glowOrb, { backgroundColor: theme.primary }]} />
         {/* Header */}
         <Animated.View entering={FadeInUp.duration(600)} style={styles.header}>
           <Image 
@@ -94,8 +112,8 @@ export default function LoginScreen() {
             style={styles.logo} 
             resizeMode="contain"
           />
-          <Text style={styles.title}>Welcome back</Text>
-          <Text style={styles.subtitle}>Sign in to your SyncTracker account</Text>
+          <Text style={[styles.title, { color: theme.text }]}>Welcome back</Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Sign in to your SyncTracker account</Text>
         </Animated.View>
 
         {/* Form */}
@@ -148,14 +166,14 @@ export default function LoginScreen() {
           {unconfirmedEmail && (
             <Animated.View entering={FadeInDown} style={styles.resendContainer}>
               {resendSuccess ? (
-                <Text style={styles.resendSuccessText}>Verification link sent! Check your inbox.</Text>
+                <Text style={[styles.resendSuccessText, { color: theme.success }]}>Verification link sent! Check your inbox.</Text>
               ) : (
                 <TouchableOpacity 
                   onPress={handleResend} 
                   disabled={isResending}
                   style={styles.resendBtn}
                 >
-                  <Text style={styles.resendText}>
+                  <Text style={[styles.resendText, { color: theme.primary }]}>
                     {isResending ? 'Sending...' : 'Resend confirmation link'}
                   </Text>
                 </TouchableOpacity>
@@ -170,18 +188,34 @@ export default function LoginScreen() {
           />
 
           <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
-            <View style={styles.dividerLine} />
+            <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
+            <Text style={[styles.dividerText, { color: theme.textMuted }]}>or</Text>
+            <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
           </View>
+
+          <TouchableOpacity
+            style={[styles.googleBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}
+            onPress={handleGoogleSignIn}
+            disabled={isGoogleLoading}
+            activeOpacity={0.8}
+          >
+            {isGoogleLoading ? (
+              <ActivityIndicator size="small" color={theme.text} />
+            ) : (
+              <>
+                <Text style={styles.googleIcon}>G</Text>
+                <Text style={[styles.googleBtnText, { color: theme.text }]}>Continue with Google</Text>
+              </>
+            )}
+          </TouchableOpacity>
 
           <TouchableOpacity
             onPress={() => navigation.navigate('Register')}
             style={styles.linkRow}
           >
-            <Text style={styles.linkText}>
+            <Text style={[styles.linkText, { color: theme.textSecondary }]}>
               Don't have an account?{' '}
-              <Text style={styles.linkHighlight}>Create one</Text>
+              <Text style={[styles.linkHighlight, { color: theme.primary }]}>Create one</Text>
             </Text>
           </TouchableOpacity>
         </Animated.View>
@@ -283,5 +317,24 @@ const styles = StyleSheet.create({
     color: '#22C55E',
     fontSize: 14,
     textAlign: 'center',
+  },
+  googleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 52,
+    borderRadius: 9999,
+    borderWidth: 1,
+    marginBottom: 20,
+    gap: 10,
+  },
+  googleIcon: {
+    fontFamily: 'SpaceGrotesk_700Bold',
+    fontSize: 20,
+    color: '#4285F4',
+  },
+  googleBtnText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 15,
   },
 });
