@@ -4,8 +4,10 @@ import Header from '@/components/common/Header';
 import useAuthStore from '@/stores/authStore';
 import * as SecureStore from 'expo-secure-store';
 import { disconnectSocket } from '@/lib/socket';
+import { useAppTheme } from '@/hooks/useAppTheme';
 
 export default function SettingsScreen() {
+  const theme = useAppTheme();
   const logout = useAuthStore(s => s.logout);
 
   const handleLogout = async () => {
@@ -15,26 +17,26 @@ export default function SettingsScreen() {
   };
 
   return (
-    <View style={styles.flex}>
+    <View style={[styles.flex, { backgroundColor: theme.background }]}>
       <Header title="Settings" showBack />
       
       <View style={styles.container}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Preferences</Text>
+          <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>Preferences</Text>
           
-          <View style={styles.settingRow}>
-            <Text style={styles.settingText}>Push Notifications</Text>
-            <Switch value={true} onValueChange={() => {}} trackColor={{ true: '#5a6ff4', false: '#2e3148' }} />
+          <View style={[styles.settingRow, { borderBottomColor: theme.border }]}>
+            <Text style={[styles.settingText, { color: theme.text }]}>Push Notifications</Text>
+            <Switch value={true} onValueChange={() => {}} trackColor={{ true: theme.primary, false: theme.surface }} />
           </View>
           
-          <View style={styles.settingRow}>
-            <Text style={styles.settingText}>Email Digests</Text>
-            <Switch value={false} onValueChange={() => {}} trackColor={{ true: '#5a6ff4', false: '#2e3148' }} />
+          <View style={[styles.settingRow, { borderBottomColor: theme.border }]}>
+            <Text style={[styles.settingText, { color: theme.text }]}>Email Digests</Text>
+            <Switch value={false} onValueChange={() => {}} trackColor={{ true: theme.primary, false: theme.surface }} />
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
+          <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>Account</Text>
           
           <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
             <Text style={styles.logoutText}>Sign Out</Text>
@@ -48,7 +50,7 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: '#0f1117' },
+  flex: { flex: 1 },
   container: { padding: 20 },
   section: {
     marginBottom: 32,
