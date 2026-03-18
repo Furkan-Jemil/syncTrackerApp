@@ -3,9 +3,11 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, SafeAr
 import Header from '@/components/common/Header';
 import useAuthStore from '@/stores/authStore';
 import apiClient from '@/lib/axios';
+import { useAppTheme } from '@/hooks/useAppTheme';
 
 export default function ProfileEditScreen() {
   const { user, updateUser } = useAuthStore();
+  const theme = useAppTheme();
   const [name, setName] = useState(user?.name || '');
   const [bio, setBio] = useState(user?.bio || '');
   const [isSaving, setIsSaving] = useState(false);
@@ -33,31 +35,31 @@ export default function ProfileEditScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
       <Header title="Edit Profile" showBack />
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>PERSONAL DETAILS</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>PERSONAL DETAILS</Text>
+          <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Full Name</Text>
+              <Text style={[styles.label, { color: theme.text }]}>Full Name</Text>
               <TextInput 
-                style={styles.input}
+                style={[styles.input, { color: theme.text, backgroundColor: theme.background, borderColor: theme.border }]}
                 value={name}
                 onChangeText={setName}
                 placeholder="Enter your name"
-                placeholderTextColor="#3F3F46"
+                placeholderTextColor={theme.textMuted}
               />
             </View>
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: theme.border }]} />
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Bio / Operational Focus</Text>
+              <Text style={[styles.label, { color: theme.text }]}>Bio / Operational Focus</Text>
               <TextInput 
-                style={[styles.input, styles.textArea]}
+                style={[styles.input, styles.textArea, { color: theme.text, backgroundColor: theme.background, borderColor: theme.border }]}
                 value={bio}
                 onChangeText={setBio}
                 placeholder="Briefly describe your focus..."
-                placeholderTextColor="#3F3F46"
+                placeholderTextColor={theme.textMuted}
                 multiline
                 numberOfLines={4}
               />
@@ -66,19 +68,19 @@ export default function ProfileEditScreen() {
         </View>
 
         <TouchableOpacity 
-          style={styles.saveBtn} 
+          style={[styles.saveBtn, { backgroundColor: theme.primary }]} 
           onPress={handleSave} 
           disabled={isSaving}
         >
           {isSaving ? (
-            <ActivityIndicator color="#052E16" />
+            <ActivityIndicator color={theme.background === '#09090B' ? '#052E16' : '#FFFFFF'} />
           ) : (
-            <Text style={styles.saveBtnText}>Update Profile</Text>
+            <Text style={[styles.saveBtnText, { color: theme.background === '#09090B' ? '#052E16' : '#FFFFFF' }]}>Update Profile</Text>
           )}
         </TouchableOpacity>
 
-        <View style={styles.infoBox}>
-          <Text style={styles.infoText}>
+        <View style={[styles.infoBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <Text style={[styles.infoText, { color: theme.textSecondary }]}>
             Your name is visible to all mission collaborators. Keep your bio professional and focused on your core tasks.
           </Text>
         </View>
@@ -90,7 +92,6 @@ export default function ProfileEditScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#09090B',
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   container: {
@@ -125,12 +126,9 @@ const styles = StyleSheet.create({
   input: {
     fontFamily: 'Inter_400Regular',
     fontSize: 16,
-    color: '#F8FAFC',
-    backgroundColor: '#09090B',
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#27272A',
   },
   textArea: {
     height: 100,
