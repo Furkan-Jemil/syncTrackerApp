@@ -6,12 +6,14 @@ import TaskCard from '@/components/tasks/TaskCard';
 import useTaskStore from '@/stores/taskStore';
 import useAuthStore from '@/stores/authStore';
 import { TaskStackParamList } from '@/navigation/TaskNavigator';
+import { useAppTheme } from '@/hooks/useAppTheme';
 
 type TaskListNavProp = NativeStackNavigationProp<TaskStackParamList, 'TaskList'>;
 
 export default function HomeScreen() {
   const navigation = useNavigation<TaskListNavProp>();
   const user = useAuthStore(s => s.user);
+  const theme = useAppTheme();
   const { tasks, isLoading, fetchTasks } = useTaskStore();
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<'All' | 'Mine' | 'Assigned' | 'Blocked'>('All');
@@ -53,18 +55,18 @@ export default function HomeScreen() {
   });
 
   return (
-    <View style={styles.flex}>
+    <View style={[styles.flex, { backgroundColor: theme.background }]}>
       {/* Header Area */}
-      <View style={styles.headerContainer}>
-        <Text style={styles.headerTitle}>Tasks</Text>
+      <View style={[styles.headerContainer, { backgroundColor: theme.background }]}>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Tasks</Text>
         
         {/* Search Bar */}
-        <View style={styles.searchContainer}>
+        <View style={[styles.searchContainer, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Text style={styles.searchIcon}>🔍</Text>
           <TextInput 
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: theme.text }]}
             placeholder="Search tasks..."
-            placeholderTextColor="#64748B"
+            placeholderTextColor={theme.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
@@ -75,14 +77,22 @@ export default function HomeScreen() {
           {['All', 'Mine', 'Assigned', 'Blocked'].map((f) => (
             <TouchableOpacity 
               key={f}
-              style={[styles.filterPill, filter === f && styles.filterPillActive]}
+              style={[
+                styles.filterPill, 
+                { backgroundColor: theme.surface, borderColor: theme.border },
+                filter === f && [styles.filterPillActive, { backgroundColor: theme.primary, borderColor: theme.primary }]
+              ]}
               onPress={() => setFilter(f as any)}
             >
-              <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>{f}</Text>
+              <Text style={[
+                styles.filterText, 
+                { color: theme.textSecondary },
+                filter === f && [styles.filterTextActive, { color: theme.background === '#09090B' ? '#052E16' : '#FFFFFF' }]
+              ]}>{f}</Text>
             </TouchableOpacity>
           ))}
         </View>
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: theme.border }]} />
       </View>
       
       <FlatList
@@ -93,16 +103,16 @@ export default function HomeScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#A3E635"
-            colors={['#A3E635']}
+            tintColor={theme.primary}
+            colors={[theme.primary]}
           />
         }
         ListEmptyComponent={
           !isLoading ? (
             <View style={styles.empty}>
               <Text style={styles.emptyEmoji}>📋</Text>
-              <Text style={styles.emptyTitle}>No tasks found</Text>
-              <Text style={styles.emptySub}>Adjust your filters or create a new one.</Text>
+              <Text style={[styles.emptyTitle, { color: theme.text }]}>No tasks found</Text>
+              <Text style={[styles.emptySub, { color: theme.textMuted }]}>Adjust your filters or create a new one.</Text>
             </View>
           ) : null
         }
@@ -121,40 +131,36 @@ export default function HomeScreen() {
       />
 
       <TouchableOpacity
-        style={styles.fab}
+        style={[styles.fab, { backgroundColor: theme.primary, shadowColor: theme.primary }]}
         activeOpacity={0.8}
         onPress={() => navigation.navigate('CreateTask')}
       >
-        <Text style={styles.fabIcon}>+</Text>
+        <Text style={[styles.fabIcon, { color: theme.background === '#09090B' ? '#052E16' : '#FFFFFF' }]}>+</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: '#09090B' },
+  flex: { flex: 1 },
   headerContainer: {
     paddingTop: 60,
     paddingHorizontal: 20,
-    backgroundColor: '#09090B',
   },
   headerTitle: {
     fontFamily: 'SpaceGrotesk_700Bold',
     fontSize: 28,
-    color: '#F7FEE7',
     marginBottom: 16,
     letterSpacing: -0.8,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#18181B', // Darker card color
     borderRadius: 9999, // Pill shape
     paddingHorizontal: 16,
     height: 52,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#27272A',
   },
   searchIcon: {
     marginRight: 10,
@@ -162,7 +168,6 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    color: '#F8FAFC',
     fontFamily: 'Inter_400Regular',
     fontSize: 16,
   },
@@ -175,9 +180,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 9999, // Pill shape
     marginRight: 12,
-    backgroundColor: '#18181B',
     borderWidth: 1,
-    borderColor: '#27272A',
   },
   filterPillActive: {
     backgroundColor: '#A3E635', // Neon active
@@ -193,7 +196,6 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#27272A',
     marginTop: 4,
   },
   list: { padding: 20, paddingBottom: 100, flexGrow: 1 },
