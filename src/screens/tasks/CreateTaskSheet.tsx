@@ -12,8 +12,10 @@ import { searchUsers, getUsers } from '@/api/users';
 import { User, ParticipantRole, ROLE_COLORS } from '@/types';
 import useTaskStore from '@/stores/taskStore';
 import useAuthStore from '@/stores/authStore';
+import { useAppTheme } from '@/hooks/useAppTheme';
 
 export default function CreateTaskSheet() {
+  const theme = useAppTheme();
   const navigation = useNavigation();
   const route = useRoute<any>();
   const taskId = route.params?.taskId;
@@ -152,7 +154,7 @@ export default function CreateTaskSheet() {
   };
 
   return (
-    <View style={styles.flex}>
+    <View style={[styles.flex, { backgroundColor: theme.background }]}>
       <Header title={taskId ? "Edit Task" : "New Task"} showBack />
       
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -200,15 +202,15 @@ export default function CreateTaskSheet() {
 
           {/* Section: Participants */}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionLabel}>ASSIGN CONTRIBUTORS</Text>
-            <Text style={styles.sectionCount}>{selectedParticipants.length} selected</Text>
+            <Text style={[styles.sectionLabel, { color: theme.primary }]}>ASSIGN CONTRIBUTORS</Text>
+            <Text style={[styles.sectionCount, { color: theme.textSecondary }]}>{selectedParticipants.length} selected</Text>
           </View>
           
-          <View style={styles.horizontalSearchContainer}>
+          <View style={[styles.horizontalSearchContainer, { borderBottomColor: theme.border }]}>
              <TextInput
-               style={styles.searchFieldMinimal}
+               style={[styles.searchFieldMinimal, { backgroundColor: theme.surface, borderColor: theme.border, color: theme.text }]}
                placeholder="🔍 Search users..."
-               placeholderTextColor="#64748B"
+               placeholderTextColor={theme.textMuted}
                value={userQuery}
                onChangeText={handleSearch}
              />
@@ -216,7 +218,7 @@ export default function CreateTaskSheet() {
 
           {isUsersLoading ? (
             <View style={styles.loaderContainer}>
-              <ActivityIndicator color="#A3E635" />
+              <ActivityIndicator color={theme.primary} />
             </View>
           ) : (
             <ScrollView 
@@ -237,13 +239,13 @@ export default function CreateTaskSheet() {
                       {user.avatar_url ? (
                         <Image source={{ uri: user.avatar_url }} style={styles.userAvatarImg} />
                       ) : (
-                        <View style={styles.userAvatarPlaceholder}>
-                          <Text style={styles.userAvatarText}>{user.name[0].toUpperCase()}</Text>
+                        <View style={[styles.userAvatarPlaceholder, { backgroundColor: theme.surface }]}>
+                          <Text style={[styles.userAvatarText, { color: theme.text }]}>{user.name[0].toUpperCase()}</Text>
                         </View>
                       )}
                       {isSelected && (
-                        <View style={styles.selectedBadge}>
-                          <Text style={styles.selectedBadgeText}>✓</Text>
+                        <View style={[styles.selectedBadge, { backgroundColor: theme.primary, borderColor: theme.background }]}>
+                          <Text style={[styles.selectedBadgeText, { color: theme.background === '#09090B' ? '#052E16' : '#FFFFFF' }]}>✓</Text>
                         </View>
                       )}
                     </View>
@@ -257,33 +259,33 @@ export default function CreateTaskSheet() {
           )}
 
           {selectedParticipants.length > 0 && (
-            <View style={styles.selectedRolesContainer}>
-              <Text style={styles.subSectionLabel}>SET ROLES</Text>
+            <View style={[styles.selectedRolesContainer, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <Text style={[styles.subSectionLabel, { color: theme.textMuted }]}>SET ROLES</Text>
               {selectedParticipants.map(p => (
-                <View key={p.user.id} style={styles.participantItem}>
+                <View key={p.user.id} style={[styles.participantItem, { borderBottomColor: theme.border + '50' }]}>
                   <View style={styles.participantInfoMini}>
-                    <Text style={styles.participantNameMini}>{p.user.name}</Text>
-                    <Text style={styles.participantRoleLabel}>{p.role}</Text>
+                    <Text style={[styles.participantNameMini, { color: theme.text }]}>{p.user.name}</Text>
+                    <Text style={[styles.participantRoleLabel, { color: theme.primary }]}>{p.role}</Text>
                   </View>
                   <View style={styles.rolePickerMinimal}>
                     {['CONTRIBUTOR', 'HELPER', 'REVIEWER', 'OBSERVER'].map(r => (
                       <TouchableOpacity 
                         key={r} 
                         style={[
-                          styles.roleBtnSmall, 
+                          styles.roleBtnSmall, { backgroundColor: theme.background },
                           p.role === r && { backgroundColor: ROLE_COLORS[r as ParticipantRole] }
                         ]}
                         onPress={() => updateRole(p.user.id, r as any)}
                       >
                         <Text style={[
                           styles.roleBtnTextSmall, 
-                          p.role === r ? { color: '#052E16' } : { color: '#94A3B8' }
+                          p.role === r ? { color: '#052E16' } : { color: theme.textSecondary }
                         ]}>{r === 'CONTRIBUTOR' ? 'C' : r === 'HELPER' ? 'H' : r === 'REVIEWER' ? 'R' : 'O'}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
                   <TouchableOpacity onPress={() => removeParticipant(p.user.id)} style={styles.removeBtnMini}>
-                    <Text style={styles.removeTextMini}>✕</Text>
+                    <Text style={[styles.removeTextMini, { color: theme.error }]}>✕</Text>
                   </TouchableOpacity>
                 </View>
               ))}
@@ -292,28 +294,28 @@ export default function CreateTaskSheet() {
 
           <View style={styles.spacerLg} />
 
-          {/* Section: Milestones */}
-          <Text style={styles.sectionLabel}>INITIAL MILESTONES</Text>
+           {/* Section: Milestones */}
+          <Text style={[styles.sectionLabel, { color: theme.primary }]}>INITIAL MILESTONES</Text>
           <View style={styles.milestoneInputRow}>
             <TextInput
-              style={styles.milestoneField}
+              style={[styles.milestoneField, { backgroundColor: theme.surface, borderColor: theme.border, color: theme.text }]}
               placeholder="Add key milestone..."
-              placeholderTextColor="#64748B"
+              placeholderTextColor={theme.textMuted}
               value={newMilestone}
               onChangeText={setNewMilestone}
               onSubmitEditing={addMilestone}
             />
-            <TouchableOpacity style={styles.addMilestoneBtn} onPress={addMilestone}>
-              <Text style={styles.addMilestoneText}>+</Text>
+            <TouchableOpacity style={[styles.addMilestoneBtn, { backgroundColor: theme.surface, borderColor: theme.border }]} onPress={addMilestone}>
+              <Text style={[styles.addMilestoneText, { color: theme.primary }]}>+</Text>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.milestoneList}>
+           <View style={styles.milestoneList}>
             {milestones.map((m, i) => (
-              <View key={i} style={styles.milestoneItem}>
-                <Text style={styles.milestoneText}>{i + 1}. {m}</Text>
+              <View key={i} style={[styles.milestoneItem, { borderBottomColor: theme.border }]}>
+                <Text style={[styles.milestoneText, { color: theme.text }]}>{i + 1}. {m}</Text>
                 <TouchableOpacity onPress={() => removeMilestone(i)}>
-                  <Text style={styles.removeText}>✕</Text>
+                  <Text style={[styles.removeText, { color: theme.error }]}>✕</Text>
                 </TouchableOpacity>
               </View>
             ))}
@@ -333,7 +335,7 @@ export default function CreateTaskSheet() {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: '#09090B' },
+  flex: { flex: 1 },
   container: { padding: 20, paddingBottom: 60 },
   spacer: { height: 16 },
   spacerLg: { height: 32 },
