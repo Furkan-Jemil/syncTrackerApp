@@ -5,8 +5,10 @@ import Header from '@/components/common/Header';
 import * as ImagePicker from 'expo-image-picker';
 import { getUserStats, uploadAvatar } from '@/api/users';
 import { useNavigation } from '@react-navigation/native';
+import { useAppTheme } from '@/hooks/useAppTheme';
 
 export default function ProfileScreen() {
+  const theme = useAppTheme();
   const navigation = useNavigation<any>();
   const { user, logout, updateUser } = useAuthStore();
   const [stats, setStats] = useState({
@@ -65,12 +67,12 @@ export default function ProfileScreen() {
   };
   
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
       <Header title="Command Profile" />
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         
         {/* Profile Card */}
-        <View style={styles.profileCard}>
+        <View style={[styles.profileCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <TouchableOpacity 
             style={styles.avatarContainer} 
             onPress={handlePickImage} 
@@ -80,8 +82,8 @@ export default function ProfileScreen() {
             {user?.avatar_url ? (
               <Image source={{ uri: user.avatar_url }} style={styles.avatarImage} />
             ) : (
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{user?.name?.charAt(0).toUpperCase() || 'U'}</Text>
+              <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
+                <Text style={[styles.avatarText, { color: theme.background }]}>{user?.name?.charAt(0).toUpperCase() || 'U'}</Text>
               </View>
             )}
             
@@ -93,39 +95,38 @@ export default function ProfileScreen() {
             ) : null}
           </TouchableOpacity>
           
-          <Text style={styles.name}>{user?.name || 'Unknown Officer'}</Text>
-          <Text style={styles.email}>{user?.email || 'No email provided'}</Text>
+          <Text style={[styles.name, { color: theme.text }]}>{user?.name || 'Unknown Officer'}</Text>
+          <Text style={[styles.email, { color: theme.textSecondary }]}>{user?.email || 'No email provided'}</Text>
           
           <TouchableOpacity 
-            style={styles.editBtn}
+            style={[styles.editBtn, { backgroundColor: theme.surface, borderColor: theme.border, borderWidth: 1 }]}
             onPress={() => navigation.navigate('ProfileEdit')}
           >
-            <Text style={styles.editBtnText}>Edit Profile</Text>
+            <Text style={[styles.editBtnText, { color: theme.text }]}>Edit Profile</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Global Stats */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>GLOBAL METRICS</Text>
+        <View style={[styles.section]}>
+          <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>GLOBAL METRICS</Text>
           {isLoadingStats ? (
-            <ActivityIndicator style={{ marginTop: 20 }} color="#A3E635" />
+            <ActivityIndicator style={{ marginTop: 20 }} color={theme.primary} />
           ) : (
             <View style={styles.statsGrid}>
-              <View style={styles.statBox}>
-                <Text style={styles.statValue}>{stats.tasksResponsible}</Text>
-                <Text style={styles.statLabel}>Tasks Responsible</Text>
+              <View style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                <Text style={[styles.statValue, { color: theme.primary }]}>{stats.tasksResponsible}</Text>
+                <Text style={[styles.statLabel, { color: theme.textMuted }]}>Tasks Responsible</Text>
               </View>
-              <View style={styles.statBox}>
-                <Text style={styles.statValue}>{stats.tasksContributed}</Text>
-                <Text style={styles.statLabel}>Tasks Contributed</Text>
+              <View style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                <Text style={[styles.statValue, { color: theme.primary }]}>{stats.tasksContributed}</Text>
+                <Text style={[styles.statLabel, { color: theme.textMuted }]}>Tasks Contributed</Text>
               </View>
-              <View style={styles.statBox}>
-                <Text style={styles.statValue}>{stats.milestonesHit}</Text>
-                <Text style={styles.statLabel}>Milestones Hit</Text>
+              <View style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                <Text style={[styles.statValue, { color: theme.primary }]}>{stats.milestonesHit}</Text>
+                <Text style={[styles.statLabel, { color: theme.textMuted }]}>Milestones Hit</Text>
               </View>
-              <View style={styles.statBox}>
-                <Text style={styles.statValue}>{Math.round(stats.timeLogged / 60)}h</Text>
-                <Text style={styles.statLabel}>Time Logged</Text>
+              <View style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                <Text style={[styles.statValue, { color: theme.primary }]}>{Math.round(stats.timeLogged / 60)}h</Text>
+                <Text style={[styles.statLabel, { color: theme.textMuted }]}>Time Logged</Text>
               </View>
             </View>
           )}
@@ -133,38 +134,38 @@ export default function ProfileScreen() {
 
         {/* Settings Links */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>SYSTEM SETTINGS</Text>
-          <View style={styles.linksCard}>
+          <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>SYSTEM SETTINGS</Text>
+          <View style={[styles.linksCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <TouchableOpacity 
               style={styles.linkRow}
               onPress={() => navigation.navigate('NotificationSettings')}
             >
-              <Text style={styles.linkText}>Notification Preferences</Text>
-              <Text style={styles.linkArrow}>→</Text>
+              <Text style={[styles.linkText, { color: theme.text }]}>Notification Preferences</Text>
+              <Text style={[styles.linkArrow, { color: theme.textMuted }]}>→</Text>
             </TouchableOpacity>
             <View style={styles.divider} />
             <TouchableOpacity 
               style={styles.linkRow}
               onPress={() => navigation.navigate('ThemeSettings')}
             >
-              <Text style={styles.linkText}>Theme Configuration</Text>
-              <Text style={styles.linkArrow}>→</Text>
+              <Text style={[styles.linkText, { color: theme.text }]}>Theme Configuration</Text>
+              <Text style={[styles.linkArrow, { color: theme.textMuted }]}>→</Text>
             </TouchableOpacity>
             <View style={styles.divider} />
             <TouchableOpacity 
               style={styles.linkRow}
               onPress={() => navigation.navigate('TeamConfiguration')}
             >
-              <Text style={styles.linkText}>Team Configuration</Text>
-              <Text style={styles.linkArrow}>→</Text>
+              <Text style={[styles.linkText, { color: theme.text }]}>Team Configuration</Text>
+              <Text style={[styles.linkArrow, { color: theme.textMuted }]}>→</Text>
             </TouchableOpacity>
             <View style={styles.divider} />
             <TouchableOpacity 
               style={styles.linkRow}
               onPress={() => navigation.navigate('SecuritySettings')}
             >
-              <Text style={styles.linkText}>Security & Access</Text>
-              <Text style={styles.linkArrow}>→</Text>
+              <Text style={[styles.linkText, { color: theme.text }]}>Security & Access</Text>
+              <Text style={[styles.linkArrow, { color: theme.textMuted }]}>→</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -181,7 +182,6 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#09090B',
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   container: {
@@ -189,13 +189,11 @@ const styles = StyleSheet.create({
     paddingBottom: 120, // Accommodate floating tab bar
   },
   profileCard: {
-    backgroundColor: '#18181B',
     borderRadius: 24,
     padding: 24,
     alignItems: 'center',
     marginBottom: 32,
     borderWidth: 1,
-    borderColor: '#27272A',
   },
   avatarContainer: {
     position: 'relative',
@@ -205,7 +203,6 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#A3E635', // Neon main color
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -227,29 +224,24 @@ const styles = StyleSheet.create({
   avatarText: {
     fontFamily: 'SpaceGrotesk_700Bold',
     fontSize: 32,
-    color: '#052E16',
   },
   name: {
     fontFamily: 'SpaceGrotesk_700Bold',
     fontSize: 24,
-    color: '#F8FAFC',
     marginBottom: 4,
   },
   email: {
     fontFamily: 'Inter_400Regular',
     fontSize: 15,
-    color: '#A1A1AA',
     marginBottom: 20,
   },
   editBtn: {
-    backgroundColor: '#27272A',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 9999, // Pill outline button
   },
   editBtnText: {
     fontFamily: 'Inter_600SemiBold',
-    color: '#F8FAFC',
     fontSize: 14,
   },
   section: {
@@ -258,7 +250,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: 'Inter_700Bold',
     fontSize: 12,
-    color: '#F7FEE7',
     marginBottom: 16,
     letterSpacing: 1,
   },
@@ -270,11 +261,9 @@ const styles = StyleSheet.create({
   },
   statBox: {
     width: '47%',
-    backgroundColor: '#18181B',
     padding: 20,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#27272A',
   },
   statValue: {
     fontFamily: 'SpaceGrotesk_700Bold',
@@ -285,13 +274,10 @@ const styles = StyleSheet.create({
   statLabel: {
     fontFamily: 'Inter_500Medium',
     fontSize: 13,
-    color: '#A1A1AA',
   },
   linksCard: {
-    backgroundColor: '#18181B',
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#27272A',
     overflow: 'hidden',
   },
   linkRow: {
@@ -303,7 +289,6 @@ const styles = StyleSheet.create({
   linkText: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 15,
-    color: '#F8FAFC',
   },
   linkArrow: {
     fontSize: 18,
@@ -311,7 +296,6 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#27272A',
   },
   logoutBtn: {
     backgroundColor: 'rgba(239, 68, 68, 0.1)', // #EF444420
