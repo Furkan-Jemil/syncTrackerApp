@@ -3,8 +3,10 @@ import { View, Text, StyleSheet, ScrollView, SafeAreaView, Platform, StatusBar, 
 import Header from '@/components/common/Header';
 import useAuthStore from '@/stores/authStore';
 import dayjs from 'dayjs';
+import { useAppTheme } from '@/hooks/useAppTheme';
 
 export default function SecuritySettingsScreen() {
+  const theme = useAppTheme();
   const { user, logout } = useAuthStore();
 
   const handleTerminateSession = () => {
@@ -19,45 +21,45 @@ export default function SecuritySettingsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
       <Header title="Security & Access" showBack />
       <ScrollView contentContainerStyle={styles.container}>
         
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>ACCOUNT AUTHENTICATION</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>ACCOUNT AUTHENTICATION</Text>
+          <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <View style={styles.row}>
               <View style={styles.info}>
-                <Text style={styles.label}>Email Address</Text>
-                <Text style={styles.value}>{user?.email}</Text>
+                <Text style={[styles.label, { color: theme.textMuted }]}>Email Address</Text>
+                <Text style={[styles.value, { color: theme.text }]}>{user?.email}</Text>
               </View>
             </View>
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: theme.border }]} />
             <View style={styles.row}>
               <View style={styles.info}>
-                <Text style={styles.label}>Account ID</Text>
-                <Text style={styles.value}>{user?.id?.substring(0, 18)}...</Text>
+                <Text style={[styles.label, { color: theme.textMuted }]}>Account ID</Text>
+                <Text style={[styles.value, { color: theme.text }]}>{user?.id?.substring(0, 18)}...</Text>
               </View>
             </View>
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: theme.border }]} />
             <View style={styles.row}>
               <View style={styles.info}>
-                <Text style={styles.label}>Enlistment Date</Text>
-                <Text style={styles.value}>{dayjs(user?.createdAt).format('MMMM D, YYYY')}</Text>
+                <Text style={[styles.label, { color: theme.textMuted }]}>Enlistment Date</Text>
+                <Text style={[styles.value, { color: theme.text }]}>{dayjs(user?.createdAt).format('MMMM D, YYYY')}</Text>
               </View>
             </View>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>SESSION MANAGEMENT</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>SESSION MANAGEMENT</Text>
+          <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <View style={styles.row}>
               <View style={styles.info}>
-                <Text style={styles.label}>Current Device</Text>
-                <Text style={styles.description}>{Platform.OS === 'ios' ? 'iPhone' : 'Android Device'} — Active Now</Text>
+                <Text style={[styles.label, { color: theme.textMuted }]}>Current Device</Text>
+                <Text style={[styles.description, { color: theme.textMuted }]}>{Platform.OS === 'ios' ? 'iPhone' : 'Android Device'} — Active Now</Text>
               </View>
-              <View style={styles.activeIndicator} />
+              <View style={[styles.activeIndicator, { backgroundColor: theme.primary }]} />
             </View>
           </View>
           
@@ -66,9 +68,9 @@ export default function SecuritySettingsScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.infoBox}>
-          <Text style={styles.infoTitle}>End-to-End Encryption</Text>
-          <Text style={styles.infoText}>
+        <View style={[styles.infoBox, { backgroundColor: theme.primaryMuted, borderColor: theme.primary + '20' }]}>
+          <Text style={[styles.infoTitle, { color: theme.primary }]}>End-to-End Encryption</Text>
+          <Text style={[styles.infoText, { color: theme.textSecondary }]}>
             Your mission data is synchronized using secure tunnels. We recommend periodic session termination for maximum operational security.
           </Text>
         </View>
@@ -81,7 +83,6 @@ export default function SecuritySettingsScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#09090B',
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   container: {
@@ -98,10 +99,8 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   card: {
-    backgroundColor: '#18181B',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#27272A',
     overflow: 'hidden',
   },
   row: {
@@ -122,7 +121,6 @@ const styles = StyleSheet.create({
   value: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 16,
-    color: '#F8FAFC',
   },
   description: {
     fontFamily: 'Inter_400Regular',
@@ -131,14 +129,12 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#27272A',
     marginHorizontal: 20,
   },
   activeIndicator: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#A3E635',
   },
   dangerBtn: {
     marginTop: 16,
@@ -157,21 +153,17 @@ const styles = StyleSheet.create({
   infoBox: {
     marginTop: 20,
     padding: 20,
-    backgroundColor: 'rgba(59, 130, 246, 0.05)',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.1)',
   },
   infoTitle: {
     fontFamily: 'Inter_700Bold',
     fontSize: 14,
-    color: '#3B82F6',
     marginBottom: 8,
   },
   infoText: {
     fontFamily: 'Inter_400Regular',
     fontSize: 14,
-    color: '#A1A1AA',
     lineHeight: 20,
   },
 });
