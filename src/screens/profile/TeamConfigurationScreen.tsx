@@ -3,8 +3,10 @@ import { View, Text, StyleSheet, ScrollView, SafeAreaView, Platform, StatusBar, 
 import Header from '@/components/common/Header';
 import { getUsers } from '@/api/users';
 import { User } from '@/types';
+import { useAppTheme } from '@/hooks/useAppTheme';
 
 export default function TeamConfigurationScreen() {
+  const theme = useAppTheme();
   const [collaborators, setCollaborators] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -25,48 +27,48 @@ export default function TeamConfigurationScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
       <Header title="Team Configuration" showBack />
       <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.infoBox}>
-          <Text style={styles.infoTitle}>Operational Network</Text>
-          <Text style={styles.infoText}>
+        <View style={[styles.infoBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <Text style={[styles.infoTitle, { color: theme.text }]}>Operational Network</Text>
+          <Text style={[styles.infoText, { color: theme.textSecondary }]}>
             Below are your frequent mission collaborators. You can manage visibility and team synchronization settings here.
           </Text>
         </View>
 
-        <Text style={styles.sectionTitle}>FREQUENT COLLABORATORS</Text>
+        <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>FREQUENT COLLABORATORS</Text>
         
         {isLoading ? (
-          <ActivityIndicator color="#A3E635" style={{ marginTop: 20 }} />
+          <ActivityIndicator color={theme.primary} style={{ marginTop: 20 }} />
         ) : (
           <View style={styles.teamList}>
             {collaborators.map((user) => (
-              <View key={user.id} style={styles.userCard}>
+              <View key={user.id} style={[styles.userCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                 <View style={styles.avatarContainer}>
                   {user.avatar_url ? (
                     <Image source={{ uri: user.avatar_url }} style={styles.avatar} />
                   ) : (
-                    <View style={styles.avatarPlaceholder}>
-                      <Text style={styles.avatarInitials}>{user.name?.charAt(0).toUpperCase()}</Text>
+                    <View style={[styles.avatarPlaceholder, { backgroundColor: theme.background }]}>
+                      <Text style={[styles.avatarInitials, { color: theme.textMuted }]}>{user.name?.charAt(0).toUpperCase()}</Text>
                     </View>
                   )}
                   <View style={styles.onlineDot} />
                 </View>
                 <View style={styles.userInfo}>
-                  <Text style={styles.userName}>{user.name}</Text>
-                  <Text style={styles.userEmail}>{user.email}</Text>
+                  <Text style={[styles.userName, { color: theme.text }]}>{user.name}</Text>
+                  <Text style={[styles.userEmail, { color: theme.textSecondary }]}>{user.email}</Text>
                 </View>
-                <TouchableOpacity style={styles.actionBtn}>
-                  <Text style={styles.actionBtnText}>Configure</Text>
+                <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.background }]}>
+                  <Text style={[styles.actionBtnText, { color: theme.text }]}>Configure</Text>
                 </TouchableOpacity>
               </View>
             ))}
           </View>
         )}
 
-        <TouchableOpacity style={styles.addBtn}>
-          <Text style={styles.addBtnText}>+ Enroll New Collaborator</Text>
+        <TouchableOpacity style={[styles.addBtn, { borderColor: theme.border }]}>
+          <Text style={[styles.addBtnText, { color: theme.textSecondary }]}>+ Enroll New Collaborator</Text>
         </TouchableOpacity>
 
       </ScrollView>
@@ -77,7 +79,6 @@ export default function TeamConfigurationScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#09090B',
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   container: {
@@ -85,22 +86,18 @@ const styles = StyleSheet.create({
   },
   infoBox: {
     padding: 20,
-    backgroundColor: '#18181B',
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#27272A',
     marginBottom: 32,
   },
   infoTitle: {
     fontFamily: 'Inter_700Bold',
     fontSize: 14,
-    color: '#F8FAFC',
     marginBottom: 8,
   },
   infoText: {
     fontFamily: 'Inter_400Regular',
     fontSize: 14,
-    color: '#71717A',
     lineHeight: 20,
   },
   sectionTitle: {
@@ -116,11 +113,9 @@ const styles = StyleSheet.create({
   userCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#18181B',
     padding: 16,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#27272A',
   },
   avatarContainer: {
     position: 'relative',
@@ -135,12 +130,10 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#3F3F46',
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarInitials: {
-    color: '#F8FAFC',
     fontSize: 18,
     fontWeight: 'bold',
   },
@@ -153,7 +146,6 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: '#A3E635',
     borderWidth: 2,
-    borderColor: '#18181B',
   },
   userInfo: {
     flex: 1,
@@ -161,16 +153,13 @@ const styles = StyleSheet.create({
   userName: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 16,
-    color: '#F8FAFC',
     marginBottom: 2,
   },
   userEmail: {
     fontFamily: 'Inter_400Regular',
     fontSize: 13,
-    color: '#71717A',
   },
   actionBtn: {
-    backgroundColor: '#27272A',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
@@ -178,7 +167,6 @@ const styles = StyleSheet.create({
   actionBtnText: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 12,
-    color: '#F8FAFC',
   },
   addBtn: {
     marginTop: 32,
@@ -186,12 +174,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderStyle: 'dashed',
-    borderColor: '#3F3F46',
     alignItems: 'center',
   },
   addBtnText: {
     fontFamily: 'Inter_600SemiBold',
-    color: '#A1A1AA',
     fontSize: 14,
   },
 });
