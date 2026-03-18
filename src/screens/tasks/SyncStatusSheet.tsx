@@ -8,10 +8,12 @@ import { updateSyncStatus } from '@/api/participants';
 import { SyncStatus, SYNC_STATUS_COLORS, SYNC_STATUS_LABELS } from '@/types';
 import * as Haptics from 'expo-haptics';
 import useAuthStore from '@/stores/authStore';
+import { useAppTheme } from '@/hooks/useAppTheme';
 import useTaskStore from '@/stores/taskStore';
 import useSyncStore from '@/stores/syncStore';
 
 export default function SyncStatusSheet() {
+  const theme = useAppTheme();
   const navigation = useNavigation();
   const route = useRoute<any>();
   const taskId = route.params?.taskId;
@@ -52,11 +54,11 @@ export default function SyncStatusSheet() {
   };
 
   return (
-    <View style={styles.flex}>
+    <View style={[styles.flex, { backgroundColor: theme.background }]}>
       <Header title="Update Sync Status" showBack />
       
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.headerText}>How are you tracking on this task?</Text>
+        <Text style={[styles.headerText, { color: theme.textSecondary }]}>How are you tracking on this task?</Text>
         
         <View style={styles.statusGrid}>
           {statuses.map(s => {
@@ -67,7 +69,7 @@ export default function SyncStatusSheet() {
                 key={s}
                 activeOpacity={0.7}
                 style={[
-                  styles.statusCard,
+                  styles.statusCard, { backgroundColor: theme.surface, borderColor: theme.border },
                   isActive && { borderColor: color, backgroundColor: `${color}1A` }
                 ]}
                 onPress={() => {
@@ -76,7 +78,7 @@ export default function SyncStatusSheet() {
                 }}
               >
                 <View style={[styles.dot, { backgroundColor: color }]} />
-                <Text style={[styles.statusText, isActive && { color }]}>
+                <Text style={[styles.statusText, { color: theme.text }, isActive && { color }]}>
                   {SYNC_STATUS_LABELS[s]}
                 </Text>
               </TouchableOpacity>
