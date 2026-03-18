@@ -9,8 +9,10 @@ import { searchUsers, getUsers } from '@/api/users';
 import { User, ParticipantRole, ROLE_LABELS, ROLE_COLORS } from '@/types';
 import useTaskStore from '@/stores/taskStore';
 import useAuthStore from '@/stores/authStore';
+import { useAppTheme } from '@/hooks/useAppTheme';
 
 export default function AddParticipantSheet() {
+  const theme = useAppTheme();
   const navigation = useNavigation();
   const route = useRoute<any>();
   const taskId = route.params?.taskId;
@@ -87,67 +89,67 @@ export default function AddParticipantSheet() {
   };
 
   return (
-    <View style={styles.flex}>
+    <View style={[styles.flex, { backgroundColor: theme.background }]}>
       <Header title="Add Participant" showBack />
       
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         
-        <Text style={styles.sectionLabel}>SEARCH USER</Text>
-        <View style={styles.searchBox}>
+        <Text style={[styles.sectionLabel, { color: theme.primary }]}>SEARCH USER</Text>
+        <View style={[styles.searchBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <TextInput
-            style={styles.searchField}
+            style={[styles.searchField, { color: theme.text }]}
             placeholder="Name or email..."
-            placeholderTextColor="#64748B"
+            placeholderTextColor={theme.textMuted}
             value={userQuery}
             onChangeText={handleSearch}
           />
         </View>
 
         {isUsersLoading ? (
-          <ActivityIndicator color="#A3E635" style={{ marginTop: 20 }} />
-        ) : searchResults.length > 0 && !selectedUser && (
-          <View style={styles.resultsPanel}>
+          <ActivityIndicator color={theme.primary} style={{ marginTop: 20 }} />
+        ) : searchResults.length > 0 && !selectedUser ? (
+          <View style={[styles.resultsPanel, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             {searchResults.map(user => (
-              <TouchableOpacity key={user.id} style={styles.resultItem} onPress={() => selectUser(user)}>
-                <View style={styles.resultAvatar}><Text style={styles.resultAvatarText}>{user.name[0]}</Text></View>
+              <TouchableOpacity key={user.id} style={[styles.resultItem, { borderBottomColor: theme.border }]} onPress={() => selectUser(user)}>
+                <View style={[styles.resultAvatar, { backgroundColor: theme.background }]}><Text style={[styles.resultAvatarText, { color: theme.textSecondary }]}>{user.name[0]}</Text></View>
                 <View>
-                  <Text style={styles.resultName}>{user.name}</Text>
-                  <Text style={styles.resultEmail}>{user.email}</Text>
+                  <Text style={[styles.resultName, { color: theme.text }]}>{user.name}</Text>
+                  <Text style={[styles.resultEmail, { color: theme.textSecondary }]}>{user.email}</Text>
                 </View>
               </TouchableOpacity>
             ))}
           </View>
-        )}
+        ) : null}
 
         {selectedUser && (
-          <View style={styles.selectedUserCard}>
+          <View style={[styles.selectedUserCard, { backgroundColor: theme.primary + '1A', borderColor: theme.primary }]}>
             <View style={styles.selectedUserInfo}>
-              <View style={styles.avatar}><Text style={styles.avatarText}>{selectedUser.name[0]}</Text></View>
+              <View style={[styles.avatar, { backgroundColor: theme.background }]}><Text style={[styles.avatarText, { color: theme.text }]}>{selectedUser.name[0]}</Text></View>
               <View>
-                <Text style={styles.selectedUserName}>{selectedUser.name}</Text>
-                <Text style={styles.selectedUserEmail}>{selectedUser.email}</Text>
+                <Text style={[styles.selectedUserName, { color: theme.text }]}>{selectedUser.name}</Text>
+                <Text style={[styles.selectedUserEmail, { color: theme.textSecondary }]}>{selectedUser.email}</Text>
               </View>
             </View>
             <TouchableOpacity onPress={() => setSelectedUser(null)}>
-              <Text style={styles.removeText}>✕</Text>
+              <Text style={[styles.removeText, { color: theme.error }]}>✕</Text>
             </TouchableOpacity>
           </View>
         )}
         
-        <Text style={[styles.sectionLabel, { marginTop: 24 }]}>SELECT ROLE</Text>
+        <Text style={[styles.sectionLabel, { marginTop: 24, color: theme.primary }]}>SELECT ROLE</Text>
         <View style={styles.roleGrid}>
           {roles.map(r => (
             <TouchableOpacity
               key={r}
               activeOpacity={0.7}
               style={[
-                styles.roleCard, 
+                styles.roleCard, { backgroundColor: theme.surface, borderColor: theme.border },
                 role === r && { borderColor: ROLE_COLORS[r], backgroundColor: `${ROLE_COLORS[r]}1A` }
               ]}
               onPress={() => setRole(r)}
             >
               <Text style={[
-                styles.roleText, 
+                styles.roleText, { color: theme.textSecondary },
                 role === r && { color: ROLE_COLORS[r] }
               ]}>
                 {ROLE_LABELS[r]}
@@ -156,7 +158,7 @@ export default function AddParticipantSheet() {
           ))}
         </View>
 
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        {error ? <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text> : null}
 
         <PrimaryButton
           title="Add Participant"
@@ -172,7 +174,7 @@ export default function AddParticipantSheet() {
 
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: '#09090B' },
+  flex: { flex: 1 },
   container: { padding: 20 },
   sectionLabel: {
     fontFamily: 'Inter_700Bold',
