@@ -17,7 +17,7 @@ interface TaskState {
   
   // Participant & Workflow Actions
   updateParticipantStatus: (taskId: string, userId: string, status: 'ACCEPTED' | 'REJECTED') => Promise<void>;
-  submitWork: (taskId: string, userId: string, notes: string, attachments?: { name: string, url: string, fileType: string, sizeBytes?: number }[]) => Promise<void>;
+  submitWork: (taskId: string, userId: string, notes: string, ownerId?: string, attachments?: { name: string, url: string, fileType: string, sizeBytes?: number }[]) => Promise<void>;
   reviewTask: (taskId: string, status: 'COMPLETED' | 'ACTIVE', feedback?: string) => Promise<void>;
   
   // Optimistic updates
@@ -100,10 +100,10 @@ const useTaskStore = create<TaskState>((set, get) => ({
     get().updateParticipantStatusOptimistic(taskId, userId, status);
   },
 
-  submitWork: async (taskId, userId, notes, attachments = []) => {
+  submitWork: async (taskId, userId, notes, ownerId, attachments = []) => {
     set({ isLoading: true });
     try {
-      await submitWork(taskId, userId, notes, attachments);
+      await submitWork(taskId, userId, notes, ownerId, attachments);
       await get().fetchTaskById(taskId);
     } catch (err: any) {
       set({ error: err.message });
