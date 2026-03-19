@@ -8,8 +8,10 @@ import StyledTextInput from '@/components/common/StyledTextInput';
 import PrimaryButton from '@/components/common/PrimaryButton';
 import { timeLogSchema, TimeLogFormValues } from '@/utils/schemas';
 import apiClient from '@/lib/axios';
+import { useAppTheme } from '@/hooks/useAppTheme';
 
 export default function TimeLogSheet() {
+  const theme = useAppTheme();
   const navigation = useNavigation();
   const route = useRoute<any>();
   const taskId = route.params?.taskId;
@@ -40,10 +42,10 @@ export default function TimeLogSheet() {
   };
 
   return (
-    <View style={styles.flex}>
+    <View style={[styles.flex, { backgroundColor: theme.background }]}>
       <Header title="Log Time" showBack />
       
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <KeyboardAvoidingView style={[styles.flex, { backgroundColor: theme.background }]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
           
           <Controller
