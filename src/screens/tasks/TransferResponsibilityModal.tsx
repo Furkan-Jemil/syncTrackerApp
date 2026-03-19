@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import Header from '@/components/common/Header';
 import PrimaryButton from '@/components/common/PrimaryButton';
 import useAuthStore from '@/stores/authStore';
 import useTaskStore from '@/stores/taskStore';
 import { useSocket } from '@/hooks/useSocket';
 import { useNotificationStore } from '@/components/common/NotificationBanner';
+import { useAppTheme } from '@/hooks/useAppTheme';
 
 export default function TransferResponsibilityModal() {
+  const theme = useAppTheme();
   const navigation = useNavigation();
   const route = useRoute<any>();
   const taskId = route.params?.taskId;
@@ -51,17 +54,17 @@ export default function TransferResponsibilityModal() {
   };
 
   return (
-    <View style={styles.flex}>
+    <View style={[styles.flex, { backgroundColor: theme.background }]}>
       <Header title="Transfer Ownership" showBack />
       
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.helperText}>
+        <Text style={[styles.helperText, { color: theme.textSecondary }]}>
           Select a team member to take over as the Responsible Owner for this task.
         </Text>
 
         {availableParticipants.length === 0 ? (
-          <View style={styles.emptyBox}>
-            <Text style={styles.emptyText}>No other participants available for transfer.</Text>
+          <View style={[styles.emptyBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Text style={[styles.emptyText, { color: theme.textMuted }]}>No other participants available for transfer.</Text>
           </View>
         ) : (
           <View style={styles.list}>
@@ -71,19 +74,22 @@ export default function TransferResponsibilityModal() {
                 <TouchableOpacity
                   key={p.id}
                   activeOpacity={0.7}
-                  style={[styles.userCard, isSelected && styles.userCardSelected]}
+                  style={[
+                    styles.userCard, { backgroundColor: theme.surface, borderColor: theme.border },
+                    isSelected && { borderColor: '#22c55e', backgroundColor: '#22c55e1A' }
+                  ]}
                   onPress={() => setSelectedUserId(p.userId)}
                 >
-                  <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>{p.user?.name.charAt(0)}</Text>
+                  <View style={[styles.avatar, { backgroundColor: theme.background }]}>
+                    <Text style={[styles.avatarText, { color: theme.text }]}>{p.user?.name.charAt(0)}</Text>
                   </View>
                   <View style={styles.info}>
-                    <Text style={[styles.name, isSelected && styles.nameSelected]}>
+                    <Text style={[styles.name, { color: theme.text }, isSelected && { color: theme.primary }]}>
                       {p.user?.name}
                     </Text>
-                    <Text style={styles.role}>{p.role}</Text>
+                    <Text style={[styles.role, { color: theme.textSecondary }]}>{p.role}</Text>
                   </View>
-                  {isSelected && <Text style={styles.checkIcon}>✅</Text>}
+                  {isSelected && <Ionicons name="checkmark-circle" size={20} color={theme.primary} />}
                 </TouchableOpacity>
               )
             })}
@@ -103,24 +109,20 @@ export default function TransferResponsibilityModal() {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: '#0f1117' },
+  flex: { flex: 1 },
   container: { padding: 20 },
   helperText: {
     fontSize: 14,
-    color: '#8890b5',
     lineHeight: 20,
     marginBottom: 24,
   },
   emptyBox: {
     padding: 24,
-    backgroundColor: '#1a1d27',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#2e3148',
     alignItems: 'center',
   },
   emptyText: {
-    color: '#6370a0',
     fontSize: 14,
   },
   list: {
@@ -130,20 +132,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#1a1d27',
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#2e3148',
   },
   userCardSelected: {
-    borderColor: '#22c55e',
-    backgroundColor: '#22c55e1A',
   },
   avatar: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#2e3148',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,
@@ -151,7 +148,6 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#f0f4ff',
   },
   info: {
     flex: 1,
@@ -159,7 +155,6 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#f0f4ff',
     marginBottom: 2,
   },
   nameSelected: {
@@ -167,9 +162,7 @@ const styles = StyleSheet.create({
   },
   role: {
     fontSize: 12,
-    color: '#6370a0',
   },
   checkIcon: {
-    fontSize: 16,
   },
 });
