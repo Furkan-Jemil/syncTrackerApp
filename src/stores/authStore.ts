@@ -3,7 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 import { AuthUser, LoginPayload, RegisterPayload } from '@/types';
 import { TOKEN_KEY } from '@/lib/axios';
 import { setSentryUser } from '@/lib/sentry';
-import { login as apiLogin, register as apiRegister, logout as apiLogout, getMe, resendConfirmation as apiResendConfirmation } from '@/api/auth';
+import { login as apiLogin, register as apiRegister, logout as apiLogout, getMe, resendConfirmation as apiResendConfirmation, loginWithGoogle as apiLoginWithGoogle } from '@/api/auth';
 
 interface AuthState {
   user: AuthUser | null;
@@ -14,6 +14,7 @@ interface AuthState {
   // Actions
   login: (payload: LoginPayload) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   restoreSession: () => Promise<void>;
   clearError: () => void;
@@ -46,6 +47,13 @@ const useAuthStore = create<AuthState>((set) => ({
       // If no token, user is created but needs verification — don't log them in yet
       throw new Error("Account created! Please check your email for a verification link.");
     }
+  },
+
+  loginWithGoogle: async () => {
+    set({ error: null });
+    const user = await apiLoginWithGoogle();
+    setSentryUser({ id: user.id, email: user.email, name: user.name });
+    set({ user, isAuthenticated: true });
   },
 
   logout: async () => {
