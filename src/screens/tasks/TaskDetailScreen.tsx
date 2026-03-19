@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, Platform, TextInput, Modal } from 'react-native';
-import { G } from 'react-native-svg';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import useTaskStore from '@/stores/taskStore';
 import useAuthStore from '@/stores/authStore';
@@ -12,6 +11,7 @@ import { ROLE_COLORS, SyncStatus, Attachment } from '@/types';
 import dayjs from 'dayjs';
 import * as DocumentPicker from 'expo-document-picker';
 import { uploadAttachmentToStorage } from '@/api/attachments';
+import { useAppTheme } from '@/hooks/useAppTheme';
 
 export default function TaskDetailScreen() {
   const route = useRoute<any>();
@@ -22,6 +22,7 @@ export default function TaskDetailScreen() {
   const { selectedTask, fetchTaskById, isLoading, clearSelectedTask, updateParticipantStatus, submitWork, reviewTask } = useTaskStore();
   const updateLiveStatus = useSyncStore(s => s.updateStatus);
   const showNotification = useNotificationStore(s => s.showNotification);
+  const theme = useAppTheme();
 
   const [isSubmitModalVisible, setIsSubmitModalVisible] = React.useState(false);
   const [isReviewModalVisible, setIsReviewModalVisible] = React.useState(false);
@@ -100,14 +101,20 @@ export default function TaskDetailScreen() {
   };
 
   const onSubmitWork = async () => {
+    if (!submissionNotes.trim()) {
+      showNotification('Please add a description of what you completed.', 'URGENT');
+      return;
+    }
     try {
-      await submitWork(taskId, user!.id, submissionNotes, pendingAttachments);
+      // Notify the responsible owner (not just the assigner) so they can see the submission
+      const notifyId = selectedTask?.responsibleOwnerId || selectedTask?.assignedById;
+      await submitWork(taskId, user!.id, submissionNotes, notifyId);
       showNotification('Work submitted for review!', 'SUCCESS');
       setIsSubmitModalVisible(false);
       setSubmissionNotes('');
       setPendingAttachments([]);
     } catch (err) {
-      showNotification('Submission failed', 'URGENT');
+      showNotification('Submission failed. Please try again.', 'URGENT');
     }
   };
 
@@ -155,27 +162,27 @@ export default function TaskDetailScreen() {
 
   if (isLoading || !selectedTask) {
     return (
-      <View style={styles.flexCentered}>
-        <ActivityIndicator color="#A3E635" />
+      <View style={[styles.flexCentered, { backgroundColor: theme.background }]}>
+        <ActivityIndicator color={theme.primary} />
       </View>
     );
   }
 
   const renderSectionHeader = (title: string, rightAction?: React.ReactNode) => (
     <View style={styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <Text style={[styles.sectionTitle, { color: theme.text }]}>{title}</Text>
       {rightAction}
     </View>
   );
 
   return (
-    <View style={styles.flex}>
+    <View style={[styles.flex, { backgroundColor: theme.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
         {/* Simple Top Navigation Header */}
-        <View style={styles.topNavHeader}>
-          <TouchableOpacity style={styles.iconNavBtn} onPress={() => navigation.goBack()}>
-            <Text style={styles.iconNavBtnText}>‹</Text>
+        <View style={[styles.topNavHeader, { backgroundColor: theme.background }]}>
+          <TouchableOpacity style={[styles.iconNavBtn, { backgroundColor: theme.surface, borderColor: theme.border }]} onPress={() => navigation.goBack()}>
+            <Text style={[styles.iconNavBtnText, { color: theme.text }]}>‹</Text>
           </TouchableOpacity>
           {selectedTask.assignedById === user?.id && (
             <TouchableOpacity 
@@ -188,16 +195,16 @@ export default function TaskDetailScreen() {
         </View>
 
         {isPending && (
-          <View style={styles.pendingBanner}>
-            <Text style={styles.pendingText}>
+          <View style={[styles.pendingBanner, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Text style={[styles.pendingText, { color: theme.text }]}>
               You've been assigned as {myParticipant?.role.replace('_', ' ')}. Do you accept?
             </Text>
             <View style={styles.pendingActions}>
               <TouchableOpacity style={styles.acceptBtn} onPress={handleAccept}>
                 <Text style={styles.acceptBtnText}>Accept Role</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.rejectBtn} onPress={handleReject}>
-                <Text style={styles.rejectBtnText}>Reject</Text>
+              <TouchableOpacity style={[styles.rejectBtn, { backgroundColor: theme.surface, borderColor: theme.border }]} onPress={handleReject}>
+                <Text style={[styles.rejectBtnText, { color: theme.text }]}>Reject</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -206,18 +213,18 @@ export default function TaskDetailScreen() {
         {/* Task Title Area */}
         <View style={styles.titleSection}>
            <View style={{ flex: 1 }}>
-              <Text style={styles.taskTitle}>{selectedTask.title}</Text>
-              <Text style={styles.taskSub}>
+              <Text style={[styles.taskTitle, { color: theme.text }]}>{selectedTask.title}</Text>
+              <Text style={[styles.taskSub, { color: theme.textSecondary }]}>
                 Responsibility: {selectedTask.responsibleOwner?.name || 'Unassigned'}
               </Text>
            </View>
-           <View style={styles.timePill}>
+           <View style={[styles.timePill, { backgroundColor: theme.surface }]}>
               <Text style={styles.timePillIcon}>⏱</Text>
-              <Text style={styles.timePillText}>{selectedTask.timeEntries?.length || 0} logs</Text>
+              <Text style={[styles.timePillText, { color: theme.text }]}>{selectedTask.timeEntries?.length || 0} logs</Text>
            </View>
         </View>
 
-        <Text style={styles.description}>
+        <Text style={[styles.description, { color: theme.textSecondary }]}>
           {selectedTask.description || 'Focus on completing this task efficiently. Log your time and update your sync status.'}
         </Text>
 
@@ -237,13 +244,13 @@ export default function TaskDetailScreen() {
            
            <View style={styles.notificationsList}>
              {(selectedTask.participants || []).filter(p => p.lastSyncAt || p.notes).slice(0, 3).map((p, idx) => (
-               <View key={p.id + idx} style={styles.notificationCard}>
+               <View key={p.id + idx} style={[styles.notificationCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                  <View style={styles.notifHeader}>
                     <View style={styles.notifAppIcon}>
                       <Text style={styles.notifAppIconText}>🎯</Text>
                     </View>
-                    <Text style={styles.notifAppName}>SyncTracker</Text>
-                    <Text style={styles.notifTime}>
+                    <Text style={[styles.notifAppName, { color: theme.textMuted }]}>SyncTracker</Text>
+                    <Text style={[styles.notifTime, { color: theme.textMuted }]}>
                       {p.lastSyncAt ? dayjs(p.lastSyncAt).fromNow() : 'Recently'}
                     </Text>
                  </View>
@@ -265,16 +272,16 @@ export default function TaskDetailScreen() {
         {/* Action Grid (Routing to the custom viz screens) */}
         <View style={styles.navigationGrid}>
           {/* Always show Tree View */}
-          <TouchableOpacity style={[styles.navCard, selectedTask.status === 'COMPLETED' && { flex: 1 }]} onPress={() => navigation.navigate('ResponsibilityTree', { taskId })}>
-            <View style={styles.navIconBg}><Text style={styles.navIcon}>🗂️</Text></View>
-            <Text style={styles.navText}>Tree View</Text>
+          <TouchableOpacity style={[styles.navCard, { backgroundColor: theme.surface }, selectedTask.status === 'COMPLETED' && { flex: 1 }]} onPress={() => navigation.navigate('ResponsibilityTree', { taskId })}>
+            <View style={[styles.navIconBg, { backgroundColor: theme.background }]}><Text style={styles.navIcon}>🗂️</Text></View>
+            <Text style={[styles.navText, { color: theme.text }]}>Tree View</Text>
           </TouchableOpacity>
           
           {/* Only show Sync Graph if task is NOT completed */}
           {selectedTask.status !== 'COMPLETED' && (
-            <TouchableOpacity style={styles.navCard} onPress={() => navigation.navigate('SyncGraph', { taskId })}>
-              <View style={styles.navIconBg}><Text style={styles.navIcon}>🕸️</Text></View>
-              <Text style={styles.navText}>Sync Graph</Text>
+            <TouchableOpacity style={[styles.navCard, { backgroundColor: theme.surface }]} onPress={() => navigation.navigate('SyncGraph', { taskId })}>
+              <View style={[styles.navIconBg, { backgroundColor: theme.background }]}><Text style={styles.navIcon}>🕸️</Text></View>
+              <Text style={[styles.navText, { color: theme.text }]}>Sync Graph</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -287,24 +294,24 @@ export default function TaskDetailScreen() {
               {selectedTask.attachments.map(att => (
                 <TouchableOpacity 
                   key={att.id} 
-                  style={styles.attachmentCard}
+                  style={[styles.attachmentCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
                   onPress={() => {
                     // Logic to open URL would go here, for now just show info
                     showNotification(`Opening ${att.name}...`, 'INFO');
                   }}
                 >
-                  <View style={styles.attachmentIcon}>
+                  <View style={[styles.attachmentIcon, { backgroundColor: theme.background }]}>
                     <Text style={{ fontSize: 20 }}>
                       {att.fileType?.includes('image') ? '🖼️' : '📄'}
                     </Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.attachmentName} numberOfLines={1}>{att.name}</Text>
-                    <Text style={styles.attachmentMeta}>
+                    <Text style={[styles.attachmentName, { color: theme.text }]} numberOfLines={1}>{att.name}</Text>
+                    <Text style={[styles.attachmentMeta, { color: theme.textSecondary }]}>
                       {att.fileType?.split('/')[1]?.toUpperCase() || 'FILE'} • {dayjs(att.createdAt).format('MMM D')}
                     </Text>
                   </View>
-                  <Text style={styles.linkArrow}>→</Text>
+                  <Text style={[styles.linkArrow, { color: theme.textMuted }]}>→</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -314,27 +321,27 @@ export default function TaskDetailScreen() {
       </ScrollView>
 
       {/* Floating Action Bar */}
-      <View style={styles.actionBar}>
+      <View style={[styles.actionBar, { backgroundColor: theme.background === '#09090B' ? 'rgba(9,9,11,0.9)' : 'rgba(255,255,255,0.9)', borderTopColor: theme.border }]}>
         {selectedTask.status === 'ACTIVE' && (myParticipant?.role === 'CONTRIBUTOR' || myParticipant?.role === 'RESPONSIBLE' || myParticipant?.role === 'HELPER') ? (
-          <TouchableOpacity style={styles.actionBtnPrimary} onPress={() => setIsSubmitModalVisible(true)}>
-            <Text style={styles.actionTextPrimary}>Submit for Review</Text>
+          <TouchableOpacity style={[styles.actionBtnPrimary, { backgroundColor: theme.primary }]} onPress={() => setIsSubmitModalVisible(true)}>
+            <Text style={[styles.actionTextPrimary, { color: theme.background === '#09090B' ? '#052E16' : '#FFFFFF' }]}>Submit for Review</Text>
           </TouchableOpacity>
         ) : selectedTask.status === 'IN_REVIEW' && myParticipant?.role === 'REVIEWER' ? (
           <TouchableOpacity style={[styles.actionBtnPrimary, { backgroundColor: '#3B82F6' }]} onPress={() => setIsReviewModalVisible(true)}>
             <Text style={[styles.actionTextPrimary, { color: '#fff' }]}>Review Submission</Text>
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity style={styles.actionBtnPrimary} onPress={() => navigation.navigate('SyncStatus', { taskId })}>
-            <Text style={styles.actionTextPrimary}>Update Sync</Text>
+          <TouchableOpacity style={[styles.actionBtnPrimary, { backgroundColor: theme.primary }]} onPress={() => navigation.navigate('SyncStatus', { taskId })}>
+            <Text style={[styles.actionTextPrimary, { color: theme.background === '#09090B' ? '#052E16' : '#FFFFFF' }]}>Update Sync</Text>
           </TouchableOpacity>
         )}
         
         <View style={styles.actionBtnRow}>
-          <TouchableOpacity style={styles.actionBtnSecondary} onPress={() => navigation.navigate('TimeLog', { taskId })}>
-            <Text style={styles.actionTextSecondary}>Log Time</Text>
+          <TouchableOpacity style={[styles.actionBtnSecondary, { backgroundColor: theme.surface, borderColor: theme.border }]} onPress={() => navigation.navigate('TimeLog', { taskId })}>
+            <Text style={[styles.actionTextSecondary, { color: theme.text }]}>Log Time</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionBtnSecondary} onPress={() => navigation.navigate('AddParticipant', { taskId })}>
-            <Text style={styles.actionTextSecondary}>Add</Text>
+          <TouchableOpacity style={[styles.actionBtnSecondary, { backgroundColor: theme.surface, borderColor: theme.border }]} onPress={() => navigation.navigate('AddParticipant', { taskId })}>
+            <Text style={[styles.actionTextSecondary, { color: theme.text }]}>Add</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -342,46 +349,50 @@ export default function TaskDetailScreen() {
       {/* Submission Modal */}
       <Modal visible={isSubmitModalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Submit Work</Text>
+          <View style={[styles.modalContent, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Submit Work</Text>
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { color: theme.text, backgroundColor: theme.background, borderColor: theme.border }]}
               placeholder="Describe what you've completed..."
-              placeholderTextColor="#71717A"
+              placeholderTextColor={theme.textMuted}
               multiline
               value={submissionNotes}
               onChangeText={setSubmissionNotes}
             />
-            <TouchableOpacity 
-              style={styles.attachmentBtn} 
+            {/* 
+              Attachment UI hidden as per user request
+              Keeping the logic for reference or future re-enabling
+            */}
+            {/* <TouchableOpacity 
+              style={[styles.attachmentBtn, { backgroundColor: theme.background, borderColor: theme.border }]} 
               onPress={handlePickAttachment}
               disabled={isUploadingAttachment}
             >
               {isUploadingAttachment ? (
-                <ActivityIndicator color="#A3E635" size="small" />
+                <ActivityIndicator color={theme.primary} size="small" />
               ) : (
-                <Text style={styles.attachmentBtnText}>📎 Attach Finished Work / Link</Text>
+                <Text style={[styles.attachmentBtnText, { color: theme.primary }]}>📎 Attach Finished Work / Link</Text>
               )}
             </TouchableOpacity>
 
             {pendingAttachments.length > 0 && (
               <View style={styles.pendingList}>
                 {pendingAttachments.map((att, i) => (
-                  <View key={i} style={styles.pendingItem}>
-                    <Text style={styles.pendingItemText} numberOfLines={1}>{att.name}</Text>
+                  <View key={i} style={[styles.pendingItem, { backgroundColor: theme.background }]}>
+                    <Text style={[styles.pendingItemText, { color: theme.textSecondary }]} numberOfLines={1}>{att.name}</Text>
                     <TouchableOpacity onPress={() => setPendingAttachments(prev => prev.filter((_, idx) => idx !== i))}>
-                      <Text style={{ color: '#EF4444', marginLeft: 8 }}>✕</Text>
+                      <Text style={{ color: theme.error, marginLeft: 8 }}>✕</Text>
                     </TouchableOpacity>
                   </View>
                 ))}
               </View>
-            )}
+            )} */}
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.modalBtnCancel} onPress={() => setIsSubmitModalVisible(false)}>
-                <Text style={styles.modalBtnTextCancel}>Cancel</Text>
+                <Text style={[styles.modalBtnTextCancel, { color: theme.textMuted }]}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.modalBtnConfirm} onPress={onSubmitWork}>
-                <Text style={styles.modalBtnTextConfirm}>Submit</Text>
+              <TouchableOpacity style={[styles.modalBtnConfirm, { backgroundColor: theme.primary }]} onPress={onSubmitWork}>
+                <Text style={[styles.modalBtnTextConfirm, { color: theme.background === '#09090B' ? '#052E16' : '#FFFFFF' }]}>Submit</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -391,32 +402,32 @@ export default function TaskDetailScreen() {
       {/* Review Modal */}
       <Modal visible={isReviewModalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Review Work</Text>
+          <View style={[styles.modalContent, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Review Work</Text>
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { color: theme.text, backgroundColor: theme.background, borderColor: theme.border }]}
               placeholder="Add your feedback or notes..."
-              placeholderTextColor="#71717A"
+              placeholderTextColor={theme.textMuted}
               multiline
               value={reviewNotes}
               onChangeText={setReviewNotes}
             />
             <View style={styles.modalActions}>
               <TouchableOpacity 
-                style={[styles.modalBtnConfirm, { backgroundColor: '#EF4444', flex: 1 }]} 
+                style={[styles.modalBtnConfirm, { backgroundColor: theme.error, flex: 1 }]} 
                 onPress={() => onReviewTask('ACTIVE')}
               >
-                <Text style={styles.modalBtnTextConfirm}>Request Changes</Text>
+                <Text style={[styles.modalBtnTextConfirm, { color: '#ffffff' }]}>Request Changes</Text>
               </TouchableOpacity>
               <TouchableOpacity 
-                style={[styles.modalBtnConfirm, { backgroundColor: '#A3E635', flex: 1 }]} 
+                style={[styles.modalBtnConfirm, { backgroundColor: theme.primary, flex: 1 }]} 
                 onPress={() => onReviewTask('COMPLETED')}
               >
-                <Text style={[styles.modalBtnTextConfirm, { color: '#052E16' }]}>Approve</Text>
+                <Text style={[styles.modalBtnTextConfirm, { color: theme.background === '#09090B' ? '#052E16' : '#FFFFFF' }]}>Approve</Text>
               </TouchableOpacity>
             </View>
             <TouchableOpacity style={[styles.modalBtnCancel, { marginTop: 12 }]} onPress={() => setIsReviewModalVisible(false)}>
-              <Text style={styles.modalBtnTextCancel}>Close</Text>
+              <Text style={[styles.modalBtnTextCancel, { color: theme.textMuted }]}>Close</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -426,8 +437,8 @@ export default function TaskDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: '#09090B' },
-  flexCentered: { flex: 1, backgroundColor: '#09090B', alignItems: 'center', justifyContent: 'center' },
+  flex: { flex: 1 },
+  flexCentered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scrollContent: { paddingBottom: 120 },
   section: {
     marginBottom: 32,
@@ -441,7 +452,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: Platform.OS === 'ios' ? 60 : 40,
     paddingBottom: 20,
-    backgroundColor: '#09090B',
   },
   iconNavBtn: {
     width: 44,
@@ -454,7 +464,6 @@ const styles = StyleSheet.create({
     borderColor: '#27272A',
   },
   iconNavBtnText: {
-    color: '#F8FAFC',
     fontSize: 28,
     lineHeight: 32,
   },
@@ -494,7 +503,6 @@ const styles = StyleSheet.create({
   timePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#18181B',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 9999,
@@ -550,11 +558,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   notificationCard: {
-    backgroundColor: '#18181B', // Dark grey/black card
     borderRadius: 24,           // Apple-style heavy rounding
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
     opacity: 0.95,
     // Add subtle shadow for depth
     shadowColor: '#000',
@@ -615,7 +621,6 @@ const styles = StyleSheet.create({
   },
   navCard: {
     flex: 1,
-    backgroundColor: '#18181B',
     borderRadius: 24,
     padding: 16,
     alignItems: 'center',
@@ -644,7 +649,6 @@ const styles = StyleSheet.create({
   participantRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#18181B',
     padding: 16,
     borderRadius: 9999,
     marginBottom: 12,
@@ -722,16 +726,13 @@ const styles = StyleSheet.create({
   },
   rejectBtn: {
     flex: 1,
-    backgroundColor: '#27272A',
     paddingVertical: 12,
     borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#3F3F46',
   },
   rejectBtnText: {
     fontFamily: 'Inter_600SemiBold',
-    color: '#F8FAFC',
     fontSize: 14,
   },
 
@@ -765,12 +766,10 @@ const styles = StyleSheet.create({
   },
   actionBtnSecondary: {
     flex: 1,
-    backgroundColor: '#18181B',
     borderRadius: 9999,
     alignItems: 'center',
     paddingVertical: 16,
     borderWidth: 1,
-    borderColor: '#27272A',
   },
   actionTextSecondary: {
     fontFamily: 'Inter_600SemiBold',
@@ -807,30 +806,25 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalInput: {
-    backgroundColor: '#09090B',
     borderRadius: 16,
     padding: 16,
-    color: '#F8FAFC',
     fontFamily: 'Inter_400Regular',
     fontSize: 14,
     minHeight: 120,
     textAlignVertical: 'top',
     marginBottom: 20,
-    borderColor: '#27272A',
+    borderWidth: 1,
   },
   attachmentBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#18181B',
     padding: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#27272A',
     marginBottom: 20,
     borderStyle: 'dashed',
   },
   attachmentBtnText: {
-    color: '#A3E635',
     fontFamily: 'Inter_600SemiBold',
     fontSize: 14,
   },
@@ -867,17 +861,14 @@ const styles = StyleSheet.create({
   attachmentCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#18181B',
     padding: 16,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#27272A',
   },
   attachmentIcon: {
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: '#27272A',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,
@@ -885,7 +876,6 @@ const styles = StyleSheet.create({
   attachmentName: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 15,
-    color: '#F8FAFC',
     marginBottom: 2,
   },
   attachmentMeta: {
@@ -901,7 +891,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#27272A', // Using consistent dark theme
     padding: 10,
     borderRadius: 8,
   },
