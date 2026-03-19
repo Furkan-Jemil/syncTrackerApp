@@ -8,7 +8,7 @@ interface NotificationState {
   notifications: Notification[];
   unreadCount: number;
   isLoading: boolean;
-  processingIds: Set<string>;
+  processingActions: Record<string, 'ACCEPT' | 'DECLINE' | undefined>;
 
   // Actions
   fetchNotifications: () => Promise<void>;
@@ -23,12 +23,12 @@ const useNotificationStore = create<NotificationState>((set, get) => ({
   notifications: [],
   unreadCount: 0,
   isLoading: false,
-  processingIds: new Set<string>(),
+  processingActions: {},
 
   fetchNotifications: async () => {
     set({ isLoading: true });
     try {
-      const { data } = await apiClient.get('/notifications?order=created_at.desc');
+      const { data } = await apiClient.get('/notifications?select=*,sender:sender_id(id,name,email,avatar_url)&order=created_at.desc');
       const rawNotifications = Array.isArray(data) ? data : data?.data || [];
       
       const notifications = rawNotifications.map((n: any) => ({
@@ -36,6 +36,12 @@ const useNotificationStore = create<NotificationState>((set, get) => ({
         userId: n.user_id,
         taskId: n.task_id,
         senderId: n.sender_id,
+        sender: n.sender ? {
+          id: n.sender.id,
+          name: n.sender.name,
+          email: n.sender.email,
+          avatar_url: n.sender.avatar_url
+        } : undefined,
         type: n.type,
         message: n.message,
         isRead: n.is_read,
@@ -46,12 +52,7 @@ const useNotificationStore = create<NotificationState>((set, get) => ({
       const unreadCount = notifications.filter((n: Notification) => !n.isRead).length;
       set({ notifications, unreadCount, isLoading: false });
     } catch (error: any) {
-      console.error('[NotificationStore] Failed to fetch notifications', {
-        message: error.message,
-        code: error.code,
-        url: error.config?.url,
-        baseUrl: error.config?.baseURL
-      });
+      console.error('[NotificationStore] Failed to fetch notifications', error);
       set({ isLoading: false });
     }
   },
@@ -86,39 +87,60 @@ const useNotificationStore = create<NotificationState>((set, get) => ({
   clearAll: () => set({ notifications: [], unreadCount: 0 }),
 
   acceptInvite: async (notification: Notification) => {
-    const { processingIds } = get();
-    const nextProcessing = new Set(processingIds);
-    nextProcessing.add(notification.id);
-    set({ processingIds: nextProcessing });
+    set((state) => ({
+      processingActions: { ...state.processingActions, [notification.id]: 'ACCEPT' }
+    }));
 
     try {
       await updateParticipantStatus(notification.taskId, notification.userId, 'ACCEPTED');
-      await get().markAsRead(notification.id);
+      await apiClient.patch(`/notifications?id=eq.${notification.id}`, { is_read: true });
+      
+      // Remove from list after success
+      set((state) => {
+         const remaining = state.notifications.filter(n => n.id !== notification.id);
+         return {
+           notifications: remaining,
+           unreadCount: remaining.filter(n => !n.isRead).length
+         };
+      });
+
       await useTaskStore.getState().fetchTasks();
     } catch (error) {
       console.error('Failed to accept invite', error);
     } finally {
-      const cleaned = new Set(get().processingIds);
-      cleaned.delete(notification.id);
-      set({ processingIds: cleaned });
+      set((state) => {
+        const next = { ...state.processingActions };
+        delete next[notification.id];
+        return { processingActions: next };
+      });
     }
   },
 
   declineInvite: async (notification: Notification) => {
-    const { processingIds } = get();
-    const nextProcessing = new Set(processingIds);
-    nextProcessing.add(notification.id);
-    set({ processingIds: nextProcessing });
+    set((state) => ({
+      processingActions: { ...state.processingActions, [notification.id]: 'DECLINE' }
+    }));
 
     try {
       await apiRejectTask(notification.taskId, notification.userId);
-      await get().markAsRead(notification.id);
+      await apiClient.patch(`/notifications?id=eq.${notification.id}`, { is_read: true });
+
+      // Remove from list after success
+      set((state) => {
+        const remaining = state.notifications.filter(n => n.id !== notification.id);
+        return {
+          notifications: remaining,
+          unreadCount: remaining.filter(n => !n.isRead).length
+        };
+      });
     } catch (error) {
       console.error('Failed to decline invite', error);
     } finally {
-      const cleaned = new Set(get().processingIds);
-      cleaned.delete(notification.id);
-      set({ processingIds: cleaned });
+      set((state) => {
+        const next = { ...state.processingActions };
+        delete next[notification.id];
+        return { processingActions: next };
+      });
     }
   },
 }));
